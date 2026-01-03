@@ -9,7 +9,7 @@ import { ThemeProvider } from "./lib/theme.jsx";
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <ThemeProvider>
-      <BrowserRouter basename="/socialanywhere">
+      <BrowserRouter>
         <App />
         <Toaster position="top-right" richColors />
       </BrowserRouter>
