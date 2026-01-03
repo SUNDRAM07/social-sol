@@ -49,16 +49,15 @@ COPY --from=frontend-builder /app/dist ./static
 # Create uploads directory
 RUN mkdir -p ./public
 
-# Expose port
+# Expose port (Railway uses PORT env var)
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+# NOTE: Healthcheck is handled by Railway, not Docker
+# Railway will check /health endpoint
 
 # Copy startup script and fix line endings (CRLF to LF)
 COPY server/startup.sh ./startup.sh
 RUN sed -i 's/\r$//' ./startup.sh && chmod +x ./startup.sh
 
-# Start command with Reddit auto-setup
+# Start command - Railway sets PORT env var
 CMD ["./startup.sh"]

@@ -4435,7 +4435,9 @@ if __name__ == "__main__":
     # Disable reload in Docker/production for stability
     # Reload causes connection issues in Docker, especially on Windows
     reload_enabled = False
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=reload_enabled)
+    # Use PORT env var (Railway sets this) or default to 8000
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=reload_enabled)
 
 # Trending topics endpoints
 from trending_topics_service import trending_service
