@@ -1,14 +1,11 @@
 // Use environment variable or detect from current location
 const getApiBaseUrl = () => {
+  // Production: Use VITE_API_BASE_URL pointing to Railway backend
   if (import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '');
   }
-  // In browser, use current origin to preserve domain
-  if (typeof window !== 'undefined') {
-    return `${window.location.origin}/socialanywhere`;
-  }
-  // Fallback for SSR or non-browser environments
-  return 'http://localhost:8000/socialanywhere';
+  // Development: Use localhost
+  return 'http://localhost:8000';
 };
 
 export const API_BASE_URL = getApiBaseUrl();
