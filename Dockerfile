@@ -40,11 +40,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy backend source
 COPY server/ .
 
-# Copy environment and Google OAuth credentials into the container.
-# NOTE: These files must exist in the project root (same folder as this Dockerfile)
-# before you run `docker compose build`.
-COPY .env ./
-COPY Credentials.json ./
+# NOTE: Environment variables are injected by Railway/Docker at runtime
+# Do NOT copy .env or Credentials.json - use environment variables instead
 
 # Copy built frontend from previous stage
 COPY --from=frontend-builder /app/dist ./static
