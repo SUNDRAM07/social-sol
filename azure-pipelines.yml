@@ -1,0 +1,61 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- main
+
+pool:
+  name: Default
+
+steps:
+- script: |
+    docker --version
+    docker compose build
+    docker compose push
+  displayName: 'Build Docker'
+
+- task: CopyFilesOverSSH@0
+  inputs:
+    sshEndpoint: 'socialanywhere'
+    sourceFolder: './'
+    contents: 'docker-compose.yml'
+    targetFolder: '/home/azureuser/socialanywhere/'
+    readyTimeout: '20000'
+  displayName: Copy Compose
+
+- task: CopyFilesOverSSH@0
+  inputs:
+    sshEndpoint: 'socialanywhere'
+    sourceFolder: './'
+    contents: 'init-db.sql'
+    targetFolder: '/home/azureuser/socialanywhere/'
+    readyTimeout: '20000'
+  displayName: Copy initdbfile
+  
+- task: CopyFilesOverSSH@0
+  inputs:
+    sshEndpoint: 'socialanywhere'
+    sourceFolder: './'
+    contents: 'migrate-db.sql'
+    targetFolder: '/home/azureuser/socialanywhere/'
+    readyTimeout: '20000'
+  displayName: Copy migratedbfile
+  
+- task: CopyFilesOverSSH@0
+  inputs:
+    sshEndpoint: 'socialanywhere'
+    sourceFolder: './server'
+    contents: '**'
+    targetFolder: '/home/azureuser/socialanywhere/server'
+    readyTimeout: '20000'
+  displayName: Copy serverfile  
+
+- task: SSH@0
+  inputs:
+    sshEndpoint: 'socialanywhere'
+    runOptions: 'inline'
+    inline: 'cd /home/azureuser/socialanywhere/ && docker compose pull && docker compose up --force-recreate -d'
+    failOnStdErr: false
+    readyTimeout: '20000'

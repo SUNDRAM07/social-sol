@@ -1,0 +1,320 @@
+/* Enhanced global design tokens with modern gradients */
+:root {
+/* Strapi-like Brand Scale (indigo/purple) */
+  --brand-50:#eef2ff; --brand-100:#e0e7ff; --brand-200:#c7d2fe; --brand-300:#a5b4fc; --brand-400:#818cf8;
+  --brand-500:#6366f1; --brand-600:#4f46e5; --brand-700:#4338ca; --brand-800:#3730a3; --brand-900:#312e81;
+
+  /* Gradient Colors - Modern Purple/Pink/Blue */
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --gradient-accent: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --gradient-warm: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  --gradient-cool: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+  --gradient-dark: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+  
+  /* Background Gradients */
+  --bg-gradient-main: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
+  --bg-gradient-subtle: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  --bg-gradient-card: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+  /* Meesho-inspired vibrant overlay (pink/magenta focus) */
+  --bg-overlay: linear-gradient(135deg,
+    rgba(237, 0, 140, 0.22),
+    rgba(255, 92, 141, 0.18),
+    rgba(102, 126, 234, 0.14));
+
+  /* Core surfaces */
+  --bg: #fef6fb; /* soft blush base to avoid pure white */
+  --bg-muted: #fdeaf5; /* muted blush for subtle elevation */
+  --surface: #fffafc; /* slightly tinted surface for cards */
+  --border: #e6edf3; /* soft border */
+  --text: #0b1724; /* primary text */
+  --text-muted: #475569; /* darker muted text for better contrast */
+  --text-light: #64748b; /* lighter muted text */
+
+  /* Primary mapping for components */
+  --primary: var(--brand-600);
+  --primary-foreground: #ffffff;
+
+  /* States */
+  --success: #16a34a; --warning: #f59e0b; --danger: #ef4444; --info: #0ea5e9;
+
+  /* Typography */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  --fs-xs:12px; --fs-sm:14px; --fs-md:16px; --fs-lg:20px; --fs-xl:24px; --fs-2xl:30px; --fs-3xl:36px;
+  --leading-tight:1.25; --leading-snug:1.35; --leading-normal:1.5;
+
+  /* Spacing & radii */
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:20px; --space-6:24px; --space-8:32px;
+  --radius-sm:6px; --radius-md:8px; --radius-lg:12px; --radius-xl:16px; --radius-2xl:20px;
+
+  /* Shadows - enhanced with color */
+  --shadow-xs: 0 1px 2px rgba(11,23,36,0.04);
+  --shadow-sm: 0 6px 18px rgba(11,23,36,0.06);
+  --shadow-md: 0 12px 36px rgba(11,23,36,0.08);
+  --shadow-lg: 0 24px 60px rgba(11,23,36,0.12);
+  --shadow-colored: 0 8px 32px rgba(102, 126, 234, 0.15);
+  --shadow-colored-lg: 0 20px 60px rgba(102, 126, 234, 0.25);
+
+  /* Focus ring */
+  --ring: 0 0 0 4px rgba(99,102,241,0.08);
+
+  /* transitions */
+  --transition-fast:0.12s ease; --transition-normal:0.18s ease; --transition-slow:0.3s ease;
+  
+  /* Background Pattern */
+  --bg-pattern: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23667eea' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Dark theme tokens */
+[data-theme="dark"] {
+  --bg: #0b1020;
+  --bg-muted: #0f172a;
+  --surface: #0f172a;
+  --border: #1f2937;
+  --text: #e5e7eb;
+  --text-muted: #94a3b8;
+  --bg-overlay: linear-gradient(135deg,
+    rgba(203, 50, 135, 0.28),
+    rgba(117, 49, 200, 0.24),
+    rgba(12, 12, 12, 0.22));
+  
+  /* Dark mode gradients */
+  --bg-gradient-subtle: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  --bg-gradient-card: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.7) 100%);
+  --bg-pattern: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23667eea' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Utility base styles */
+html, body, #root { 
+  height: 100%; 
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg);
+  background-image: var(--bg-pattern);
+  background-size: 60px 60px;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  position: relative;
+}
+
+/* Animated background gradient overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-overlay);
+  opacity: 0.28;
+  z-index: -1;
+  pointer-events: none;
+  animation: gradientShift 18s ease-in-out infinite;
+  background-size: 200% 200%;
+  mix-blend-mode: normal;
+}
+
+/* Radial mesh glow for extra depth (Meesho-like) */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(600px at 20% 20%, rgba(255, 92, 141, 0.18), transparent 60%),
+    radial-gradient(500px at 80% 30%, rgba(237, 0, 140, 0.16), transparent 60%),
+    radial-gradient(600px at 30% 80%, rgba(102, 126, 234, 0.14), transparent 60%),
+    radial-gradient(700px at 70% 75%, rgba(255, 179, 217, 0.12), transparent 65%);
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Focus visible for keyboard users */
+:focus { outline: none; }
+:focus-visible { box-shadow: var(--ring); border-radius: 6px; }
+
+/* Page container */
+.container-max { max-width: 1400px; margin-left: auto; margin-right: auto; padding-left: 1.5rem; padding-right: 1.5rem; }
+
+/* Card primitive */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  padding: 1.25rem;
+}
+
+/* Page header */
+.page-header { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; }
+.page-title { font-size:var(--fs-lg); font-weight:600; line-height:var(--leading-snug); color:var(--text); }
+.page-desc { font-size:var(--fs-sm); color:var(--text-muted); }
+
+/* Sidebar overrides to guarantee visibility */
+.app-sidebar {
+  background: var(--surface);
+}
+.app-sidebar a {
+  color: var(--text) !important;
+}
+.app-sidebar svg {
+  color: var(--text) !important;
+}
+.app-sidebar .active {
+  color: var(--brand-700) !important;
+}
+
+/* Ensure reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+/* Ensure images have dimensions by default for CLS avoidance */
+img { display: block; max-width: 100%; height: auto; }
+
+/* Light mode text contrast utilities */
+.text-contrast {
+  color: var(--text) !important;
+}
+.text-muted-contrast {
+  color: var(--text-muted) !important;
+}
+.text-light-contrast {
+  color: var(--text-light) !important;
+}
+.bg-surface-contrast {
+  background-color: var(--surface);
+  color: var(--text);
+}
+.modal-content {
+  background-color: var(--surface);
+  color: var(--text);
+}
+.modal-content input, .modal-content textarea {
+  background-color: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.modal-content input::placeholder, .modal-content textarea::placeholder {
+  color: var(--text-muted);
+}
+
+/* Modern Background Utilities */
+.bg-gradient-primary {
+  background: var(--gradient-primary);
+}
+
+.bg-gradient-secondary {
+  background: var(--gradient-secondary);
+}
+
+.bg-gradient-accent {
+  background: var(--gradient-accent);
+}
+
+.bg-gradient-warm {
+  background: var(--gradient-warm);
+}
+
+.bg-gradient-cool {
+  background: var(--gradient-cool);
+}
+
+.bg-glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+[data-theme="dark"] .bg-glass {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.bg-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Floating animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Glow effect */
+.glow {
+  box-shadow: 0 0 20px rgba(102, 126, 234, 0.3),
+              0 0 40px rgba(102, 126, 234, 0.2),
+              0 0 60px rgba(102, 126, 234, 0.1);
+}
+
+/* Readability helpers */
+.content-surface {
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Page shell wrapper to keep pages readable on vibrant backgrounds */
+.page-shell {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Dark-mode fixes for legacy tailwind utility classes used in components */
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] .bg-gray-50,
+[data-theme="dark"] .bg-gray-100 {
+  background-color: var(--surface) !important;
+}
+
+[data-theme="dark"] .bg-gray-200 {
+  background-color: color-mix(in srgb, var(--surface) 80%, var(--border) 20%) !important;
+}
+
+[data-theme="dark"] .text-gray-700,
+[data-theme="dark"] .text-gray-600,
+[data-theme="dark"] .text-gray-500 {
+  color: var(--text) !important;
+}
+
+[data-theme="dark"] .text-gray-400 {
+  color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .border-gray-100,
+[data-theme="dark"] .border-gray-200 {
+  border-color: var(--border) !important;
+}
+
+/* End of globals.css */

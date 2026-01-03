@@ -1,0 +1,98 @@
+version: '3.3'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: social-media-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: social_media_agent
+      POSTGRES_USER: smedia_user
+      POSTGRES_PASSWORD: social_media_2024
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - ./migrate-db.sql:/docker-entrypoint-initdb.d/migrate-db.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smedia_user -d social_media_agent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: social-media-agent
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    image: catalogue.wanywhere.com/socialanywhere/socialmediaagent
+    environment:
+      DATABASE_URL: postgresql://smedia_user:social_media_2024@postgres:5432/social_media_agent
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      STABILITY_API_KEY: ${STABILITY_API_KEY}
+      GEMINI_API: ${GEMINI_API}
+      CHATGPT_API: ${CHATGPT_API}
+      NANO_BANANA_API_KEY: ${NANO_BANANA_API_KEY}
+      # Authentication (use environment variables)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
+      POLL_INTERVAL_MINUTES: ${POLL_INTERVAL_MINUTES}
+      POST_WINDOW_SECONDS: ${POST_WINDOW_SECONDS}
+      HOST: ${HOST}
+      PORT: ${PORT}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      DEBUG: ${DEBUG}
+      LOG_LEVEL: ${LOG_LEVEL}
+      FACEBOOK_PAGE_ID: ${FACEBOOK_PAGE_ID}
+      GRAPH_API_URL: ${GRAPH_API_URL}
+      FACEBOOK_ACCESS_TOKEN: ${FACEBOOK_ACCESS_TOKEN}
+      REDDIT_CLIENT_ID: ${REDDIT_CLIENT_ID}
+      REDDIT_CLIENT_SECRET: ${REDDIT_CLIENT_SECRET}
+      REDDIT_USER_AGENT: ${REDDIT_USER_AGENT}
+      REDDIT_ACCESS_TOKEN: ${REDDIT_ACCESS_TOKEN}
+      REDDIT_REFRESH_TOKEN: ${REDDIT_REFRESH_TOKEN}
+      REDDIT_USERNAME: ${REDDIT_USERNAME}
+      REDDIT_PASSWORD: ${REDDIT_PASSWORD}
+      LINKEDIN_CLIENT_ID: ${LINKEDIN_CLIENT_ID}
+      LINKEDIN_CLIENT_SECRET: ${LINKEDIN_CLIENT_SECRET}
+      LINKEDIN_ACCESS_TOKEN: ${LINKEDIN_ACCESS_TOKEN:-}
+      LINKEDIN_REFRESH_TOKEN: ${LINKEDIN_REFRESH_TOKEN:-}
+      TWITTER_CONSUMER_KEY: ${TWITTER_CONSUMER_KEY}
+      TWITTER_CONSUMER_SECRET: ${TWITTER_CONSUMER_SECRET}
+      TWITTER_ACCESS_TOKEN: ${TWITTER_ACCESS_TOKEN}
+      TWITTER_ACCESS_TOKEN_SECRET: ${TWITTER_ACCESS_TOKEN_SECRET}
+      TWITTER_BEARER_TOKEN: ${TWITTER_BEARER_TOKEN}
+      TWITTER_CLIENT_ID: ${TWITTER_CLIENT_ID}
+      TWITTER_CLIENT_SECRET: ${TWITTER_CLIENT_SECRET}
+      TWITTER_USERNAME: ${TWITTER_USERNAME}
+      # Instagram API
+      INSTAGRAM_ACCESS_TOKEN: ${INSTAGRAM_ACCESS_TOKEN}
+      INSTAGRAM_ACCOUNT_ID: ${INSTAGRAM_ACCOUNT_ID}
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:-localhost:8000}
+      # LinkedIn OAuth redirect (auto-detected from PUBLIC_DOMAIN and USE_HTTPS, or set explicitly)
+      LINKEDIN_REDIRECT_URI: ${LINKEDIN_REDIRECT_URI:-}
+      USE_HTTPS: ${USE_HTTPS:-false}
+      # Image hosting services (for Instagram public URLs)
+      CLOUDINARY_URL: ${CLOUDINARY_URL}
+      CLOUDINARY_UPLOAD_PRESET: ${CLOUDINARY_UPLOAD_PRESET:-ml_default}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
+      # If GOOGLE_REDIRECT_URI is not set, code will auto-detect based on PUBLIC_DOMAIN
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./server/public:/app/public
+      - ./.env:/app/.env  # Removed - .env should not be in build
+      #- ./server/Credentials.json:/app/Credentials.json:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  postgres_data:

@@ -1,0 +1,316 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Production builds
+/build
+/dist
+/dist-electron
+
+# Next.js cache and build files
+.next/
+out/
+
+# Cache directories
+.cache/
+.parcel-cache/
+.turbo/
+
+# Environment variables
+*.env
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE and editor files
+.vscode/
+.idea/
+.cursor/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
+apps/admin-console/logs/
+apps/agent-desktop/logs/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env.test
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Temporary folders
+tmp/
+temp/
+
+# Electron specific
+dist-electron/
+*.exe
+*.dmg
+*.pkg
+*.deb
+*.rpm
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker
+.dockerignore
+
+# Git
+*.orig
+
+# Test files
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Local development
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Runtime generated files and folders
+# Build artifacts
+apps/admin-console/.next/
+apps/admin-console/out/
+apps/agent-desktop/dist/
+apps/agent-desktop/dist-electron/
+apps/agent-desktop/build/
+
+# Log files
+*.log
+apps/admin-console/logs/
+apps/agent-desktop/logs/
+
+# Test output files
+test-*.html
+test-*.js
+test-*.json
+test-*.txt
+test-*.md
+*-test.html
+*-test.js
+*-test.json
+*-test.txt
+*-test.md
+test-results/
+playwright-report/
+
+# Runtime configuration files
+auth_response.json
+config_response.json
+current-policy-summary.json
+improved-phi-patterns.json
+redaction-config.json
+
+# Temporary HTML files
+temp.html
+electron-html.html
+clipboard-debug.html
+clipboard-test.html
+redaction-debug.html
+
+# Test data files
+phi-redaction-results.txt
+phi-redaction-verification-results.txt
+redaction-test-report.md
+credit-card-redaction-report.md
+
+# Build scripts and executables
+*.bat
+*.exe
+*.dmg
+*.pkg
+*.deb
+*.rpm
+
+# IDE and editor specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Package manager files (keeping package-lock.json for reproducible builds)
+yarn.lock
+pnpm-lock.yaml
+
+# Environment files
+.env*
+!.env.example
+
+# Google OAuth Credentials (sensitive)
+Credentials.json
+credentials.json
+
+# Docker volumes and data
+postgres_data/
+redis_data/
+pgadmin_data/
+
+# Runtime cache
+.cache/
+.parcel-cache/
+.turbo/
+
+# Build outputs
+build/
+dist/
+out/
+.next/
+.nuxt/
+
+# Coverage reports
+coverage/
+*.lcov
+.nyc_output
+
+# Test results
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Runtime generated JSON files
+*-response.json
+*-summary.json
+*-results.json
+*-output.json
+
+# Electron build artifacts
+apps/agent-desktop/dist/
+apps/agent-desktop/dist-electron/
+apps/agent-desktop/build/
+
+# Next.js build artifacts
+apps/admin-console/.next/
+apps/admin-console/out/
+
+# Vite build artifacts
+apps/agent-desktop/dist/
+apps/agent-desktop/dist-electron/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# ESLint cache
+.eslintcache
+
+# Prettier cache
+.prettiercache
+
+# Stylelint cache
+.stylelintcache
+
+# Webpack cache
+.webpack/
+
+# Rollup cache
+.rollup.cache/
+
+# SWC cache
+.swc/
+
+# Turbo cache
+.turbo/
+
+# Rush cache
+common/temp/
+
+# Rush install cache
+common/deploy/

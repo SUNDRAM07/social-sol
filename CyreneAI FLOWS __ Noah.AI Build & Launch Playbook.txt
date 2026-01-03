@@ -1,0 +1,201 @@
+﻿CyreneAI FLOWS <> Noah.AI Build & Launch Playbook
+Build in Public → Launch → Raise → Scale
+A Public Vibe-Coding & Capital Formation Playbook
+________________
+
+
+PHASE 0 - Pick the Idea (Before Anything Else)
+Before registering, founders must do 3 things:
+1️⃣ Choose a Simple, Real Problem
+Ask:
+* What workflow is broken on Solana?
+* What repetitive task should never be manual?
+* What agent would save time, money, or attention?
+Good examples:
+* Trading automation
+* Wallet monitoring
+* Agent responses
+* Liquidity management
+* Research pipelines
+* Creator monetization flows
+2️⃣ Decide What You’ll Build With trynoah.ai
+Be clear:
+* What does the Flow trigger on?
+* What logic runs?
+* What on-chain action happens?
+Keep it simple for v1.
+3️⃣ Create a Name + Logo
+You need:
+* Project name
+* Simple logo (Canva is fine)
+* One-line description
+This is important for public credibility.
+________________
+
+
+PHASE 1 - Register the Project (Official Entry)
+Step 1: Register on CyreneAI
+Go to 👉 https://cyreneai.com
+* Use Backpack wallet (recommended)
+* Register under Ideation
+* Fill in:
+   * Project name
+   * Description of what you’re building
+   * Why it matters
+   * That it’s being built using trynoah.ai
+⚠️ Do NOT use “Cooking” yet - that’s for launch day only.
+DEMO: How To Register a Project on CyreneAI Launchpad
+Demo to register a project on CyreneAI Launchpad
+________________
+
+
+PHASE 2 - Public Announcement (Signal Intent)
+Once registered and verified: 
+
+Registration link to get verified: LINK
+Step 2: Public Announcement Tweet
+From your personal founder account:
+* Announce:
+   * What you’re building
+   * That you’re building it in public
+   * That it will launch on CyreneAIFLOWS
+* Tag @CyreneAI , @CyreneAIflows and @trynoahai
+Example:
+Building an on-chain automation to solve X.
+Vibe-coding it in public using @trynoahai.
+Launching soon on @cyreneai @CyreneAIFLOWS.
+This is your social commit.
+________________
+
+
+PHASE 3 - Build in Public (MOST IMPORTANT PHASE)
+This phase determines how well your launch performs.
+Twitter = Your Main Platform
+Treat Twitter as:
+* Your pitch deck
+* Your changelog
+* Your community hub
+What You MUST Share Publicly
+Post daily:
+* What you built today
+* Screenshots / short clips
+* What broke
+* What you learned
+* What’s coming next
+People don’t invest in finished products.
+They invest in momentum.
+
+Reference: 
+
+Livestream: LINK
+
+Project: https://x.com/cromafun
+________________
+
+
+Livestream Guidelines (Critical)
+You should host at least 1–2 livestreams before launch.
+Livestream Best Practices
+* Good lighting on your face
+* Clean background (not fancy, just clean)
+* Share screen while building
+* Walk through:
+   * The problem
+   * The Flow logic
+   * Live progress
+This builds trust at scale.
+________________
+
+
+PHASE 4 - Community Connection
+Your job is to help people emotionally connect with what you’re building.
+Always Explain:
+* Who this is for
+* What pain it removes
+* Why automation beats manual work
+* Why Solana makes this possible
+Invite feedback.
+Reply to every comment.
+Build with your audience, not for them.
+________________
+
+
+PHASE 5 - Ready for Capital Raise (MVP Stage)
+Once you have:
+* A working MVP
+* Public build history
+* Engaged audience
+Step 3: Reach Out to Launch
+Contact:
+* @ashishgupta1527 on Telegram
+You’ll:
+* Schedule a launch livestream
+* Finalize launch timing
+* Get configuration guidance
+________________
+
+
+PHASE 6 - Launch Configuration (Recommended Defaults)
+You’ll need:
+* 0.2 SOL in wallet (Backpack preferred)
+Recommended Settings
+* Graduation Threshold: 101 SOL
+* First Buy: 0.1 SOL (must not be sold)
+* Vesting: 6 months
+* Cliff: 1
+Everything else can remain default.
+
+DEMO: Launch Token on CyreneAI Launchpad
+________________
+
+
+PHASE 7 - Launch Day Execution
+What to Do IMMEDIATELY After Launch (Be Ready with the same before the launch)
+* Tweet the CA (no links in first tweet)
+* Tag @CyreneAI , @CyreneAIflows and @trynoahai
+* Claim DexScreener (optional)
+* Add CA to Twitter bio
+* Join livestream / Space
+⚠️ Speed matters. No delays.
+
+Reference: LINK
+________________
+
+
+PHASE 8 - Post-Launch (Turn Capital into Progress)
+After launch:
+* Claim creator fees from your profile
+* Use funds to:
+   * Improve the Flow
+   * Ship features
+   * Run experiments
+What to Share Post-Launch
+* Funds raised
+* New automations
+* Usage screenshots
+* Community feedback
+* Iterations
+________________
+
+
+Support & Help
+If you face any issues at any stage:
+* Telegram @ashishgupta1527
+* Telegram @nir_base
+You’re not alone in the process.
+________________
+
+
+Final Mindset
+CyreneAI FLOWS and Noah.ai is not about:
+❌ hype only
+❌ silent building
+❌ private development
+It is about:
+✅ building in public
+✅ tokenizing logic
+✅ community-backed execution
+✅ turning automation into economy
+If you show up every day -
+CyreneAI will amplify you.
+Build loud. Build honest. Build fast.
