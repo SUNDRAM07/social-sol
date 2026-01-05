@@ -104,6 +104,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# Simple root endpoint for testing (health check is defined later in the file)
+@app.get("/")
+async def root():
+    """Root endpoint for testing"""
+    return {"status": "ok", "message": "Social Sol API is running"}
+
 # Add middleware to fix redirects that use internal IP
 @app.middleware("http")
 async def fix_redirect_domain(request: Request, call_next):
