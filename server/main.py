@@ -76,11 +76,11 @@ main_app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware
+# CORS middleware - use same origins as root app
 main_app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=["*"],  # Allow all for sub-app, root app handles specific origins
+    allow_credentials=False,  # Must be False when using "*"
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -96,12 +96,27 @@ main_app.mount("/public", StaticFiles(directory="public"), name="public")
 app = FastAPI(lifespan=lifespan)
 
 # Add CORS middleware to root app (important for direct API access)
+# Get allowed origins from environment or use defaults
+import os
+cors_origins_env = os.getenv("CORS_ORIGINS", "")
+cors_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()] if cors_origins_env else []
+# Always include common development and production origins
+cors_origins.extend([
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://social-sol.vercel.app",
+    "https://*.vercel.app",
+])
+# Remove duplicates
+cors_origins = list(set(cors_origins))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Add middleware to fix redirects that use internal IP
