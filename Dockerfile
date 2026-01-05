@@ -55,9 +55,6 @@ EXPOSE 8000
 # NOTE: Healthcheck is handled by Railway, not Docker
 # Railway will check /health endpoint
 
-# Copy startup script and fix line endings (CRLF to LF)
-COPY server/startup.sh ./startup.sh
-RUN sed -i 's/\r$//' ./startup.sh && chmod +x ./startup.sh
-
 # Start command - Railway sets PORT env var
-CMD ["./startup.sh"]
+# Using sh -c to allow PORT variable substitution
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
