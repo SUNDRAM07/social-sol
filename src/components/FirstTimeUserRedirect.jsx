@@ -11,7 +11,7 @@ import { Loader2 } from 'lucide-react';
 function FirstTimeUserRedirect() {
   const { isAuthenticated, token } = useAuthStore();
   const [isChecking, setIsChecking] = useState(true);
-  const [redirectTo, setRedirectTo] = useState('/dashboard');
+  const [redirectTo, setRedirectTo] = useState('/chat');
 
   useEffect(() => {
     const checkAndRedirect = async () => {
@@ -28,13 +28,13 @@ function FirstTimeUserRedirect() {
           // First-time user with no platform integrations - redirect to settings
           setRedirectTo('/settings');
         } else {
-          // User has platform integrations - go to dashboard
-          setRedirectTo('/dashboard');
+          // User has platform integrations - go to chat
+          setRedirectTo('/chat');
         }
       } catch (error) {
         console.error('Error checking platform connections:', error);
-        // If check fails, default to dashboard
-        setRedirectTo('/dashboard');
+        // If check fails, default to chat
+        setRedirectTo('/chat');
       } finally {
         setIsChecking(false);
       }

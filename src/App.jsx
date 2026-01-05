@@ -6,6 +6,7 @@ import FirstTimeUserRedirect from "./components/FirstTimeUserRedirect.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import AgentChat from "./pages/AgentChat.jsx";
 import CreateCampaign from "./pages/CreateCampaign.jsx";
 import MyCampaigns from "./pages/MyCampaigns.jsx";
 import Analytics from "./pages/Analytics.jsx";
@@ -29,6 +30,12 @@ function App() {
           <Route path="/" element={
             <ProtectedRoute>
               <FirstTimeUserRedirect />
+            </ProtectedRoute>
+          } />
+          {/* New AI Chat Interface - Main Entry Point */}
+          <Route path="/chat" element={
+            <ProtectedRoute>
+              <AgentChat />
             </ProtectedRoute>
           } />
           <Route path="/dashboard" element={
@@ -94,7 +101,7 @@ function App() {
               </AppLayout>
             </ProtectedRoute>
           } />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/chat" replace />} />
         </Routes>
       </ErrorBoundary>
     </div>

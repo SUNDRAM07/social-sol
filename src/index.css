@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./styles/globals.css";
+@import "./styles/design-system.css";
 
 /* App base styles */
 html,
