@@ -267,10 +267,6 @@ async def redirect_socialanywhere(request: Request):
 
 app.mount("/socialanywhere", main_app)
 
-# Also include key routers on root app for direct access (without /socialanywhere prefix)
-from auth_routes import router as auth_router_root
-app.include_router(auth_router_root)
-
 # Serve privacy policy at root level (for direct domain access)
 @app.get("/privacy-policy.html")
 async def serve_privacy_policy_root():
@@ -364,6 +360,8 @@ main_app.include_router(social_media_router)
 # Include authentication routes
 from auth_routes import router as auth_router
 main_app.include_router(auth_router)
+# Also include on root app for direct /auth/* access (without /socialanywhere prefix)
+app.include_router(auth_router)
 
 # Include idea generator routes
 from idea_generator_routes import router as idea_generator_router
