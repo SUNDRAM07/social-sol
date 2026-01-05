@@ -2,7 +2,7 @@
 Authentication routes for Google OAuth integration
 """
 
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import Optional
@@ -10,6 +10,46 @@ from auth_service import auth_service
 from models import UserResponse
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+
+
+# Explicit OPTIONS handlers for CORS preflight
+@router.options("/register")
+async def options_register():
+    """Handle CORS preflight for register endpoint"""
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
+
+
+@router.options("/login")
+async def options_login():
+    """Handle CORS preflight for login endpoint"""
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
+
+
+@router.options("/google")
+async def options_google():
+    """Handle CORS preflight for google auth endpoint"""
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
 security = HTTPBearer()
 # Use the global instance from auth_service module instead of creating a new one
 
@@ -35,11 +75,16 @@ class AuthResponse(BaseModel):
     user: UserResponse
 
 
-@router.post("/register", response_model=AuthResponse)
-async def register(request: RegisterRequest):
+@router.post("/register")
+async def register(request: RegisterRequest, response: Response):
     """
     Register a new user with email and password
     """
+    # Add CORS headers to response
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    
     try:
         # Validate email format
         if "@" not in request.email or "." not in request.email.split("@")[1]:
