@@ -3,7 +3,7 @@
  * Handles communication with the chat backend endpoints
  */
 
-import { getApiUrl } from './api';
+import { apiUrl } from './api';
 import { useAuthStore } from '../store/authStore';
 
 /**
@@ -12,7 +12,7 @@ import { useAuthStore } from '../store/authStore';
 export async function sendChatMessage(content, conversationId = null, context = null) {
   const token = useAuthStore.getState().token;
   
-  const response = await fetch(getApiUrl('/chat/message'), {
+  const response = await fetch(apiUrl('/chat/message'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -37,7 +37,7 @@ export async function sendChatMessage(content, conversationId = null, context = 
  */
 export function streamChatMessage(conversationId, message, onChunk, onComplete, onError) {
   const token = useAuthStore.getState().token;
-  const url = getApiUrl(`/chat/stream/${conversationId}?message=${encodeURIComponent(message)}`);
+  const url = apiUrl(`/chat/stream/${conversationId}?message=${encodeURIComponent(message)}`);
   
   const eventSource = new EventSource(url);
   let content = '';
@@ -87,7 +87,7 @@ export function streamChatMessage(conversationId, message, onChunk, onComplete, 
 export async function getConversationHistory(conversationId) {
   const token = useAuthStore.getState().token;
   
-  const response = await fetch(getApiUrl(`/chat/history/${conversationId}`), {
+  const response = await fetch(apiUrl(`/chat/history/${conversationId}`), {
     headers: {
       'Authorization': `Bearer ${token}`,
     },
@@ -106,7 +106,7 @@ export async function getConversationHistory(conversationId) {
 export async function listConversations(limit = 20) {
   const token = useAuthStore.getState().token;
   
-  const response = await fetch(getApiUrl(`/chat/conversations?limit=${limit}`), {
+  const response = await fetch(apiUrl(`/chat/conversations?limit=${limit}`), {
     headers: {
       'Authorization': `Bearer ${token}`,
     },
@@ -125,7 +125,7 @@ export async function listConversations(limit = 20) {
 export async function deleteConversation(conversationId) {
   const token = useAuthStore.getState().token;
   
-  const response = await fetch(getApiUrl(`/chat/conversation/${conversationId}`), {
+  const response = await fetch(apiUrl(`/chat/conversation/${conversationId}`), {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`,
