@@ -56,5 +56,4 @@ EXPOSE 8000
 # Railway will check /health endpoint
 
 # Start command - Railway sets PORT env var
-# TEMP: Using minimal test app to debug deployment issues
-CMD ["python", "test_minimal.py"]
+CMD ["python", "main.py"]
