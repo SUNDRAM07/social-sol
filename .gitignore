@@ -314,3 +314,5 @@ common/temp/
 
 # Rush install cache
 common/deploy/
+__pycache__/
+*.pyc
