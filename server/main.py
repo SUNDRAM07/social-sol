@@ -95,6 +95,15 @@ main_app.mount("/public", StaticFiles(directory="public"), name="public")
 # Create root app and mount main app at /socialanywhere
 app = FastAPI(lifespan=lifespan)
 
+# Add CORS middleware to root app (important for direct API access)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Add middleware to fix redirects that use internal IP
 @app.middleware("http")
 async def fix_redirect_domain(request: Request, call_next):
@@ -257,6 +266,10 @@ async def redirect_socialanywhere(request: Request):
     return RedirectResponse(url=redirect_url, status_code=301)
 
 app.mount("/socialanywhere", main_app)
+
+# Also include key routers on root app for direct access (without /socialanywhere prefix)
+from auth_routes import router as auth_router_root
+app.include_router(auth_router_root)
 
 # Serve privacy policy at root level (for direct domain access)
 @app.get("/privacy-policy.html")
