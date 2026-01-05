@@ -57,4 +57,4 @@ EXPOSE 8000
 
 # Start command - Railway sets PORT env var
 # TEMP: Using minimal test app to debug deployment issues
-CMD ["sh", "-c", "uvicorn test_minimal:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["python", "test_minimal.py"]

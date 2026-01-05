@@ -31,6 +31,10 @@ async def register():
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
-    print(f"Starting minimal test app on port {port}")
+    print(f"=" * 50)
+    print(f"🚀 Starting minimal test app")
+    print(f"📡 PORT env var: {os.getenv('PORT', 'NOT SET')}")
+    print(f"🔌 Listening on: 0.0.0.0:{port}")
+    print(f"=" * 50)
     uvicorn.run(app, host="0.0.0.0", port=port)
 
