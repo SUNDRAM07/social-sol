@@ -374,6 +374,11 @@ app.include_router(auth_router)
 from idea_generator_routes import router as idea_generator_router
 main_app.include_router(idea_generator_router)
 
+# Include chat routes for conversational AI interface
+from chat_routes import router as chat_router
+main_app.include_router(chat_router)
+app.include_router(chat_router)  # Also include on root for direct /chat/* access
+
 # Import auth dependency after router is included
 from auth_routes import get_current_user_dependency
 from auth_service import auth_service

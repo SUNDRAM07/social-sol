@@ -20,6 +20,16 @@
   --color-bg-elevated: #1f1f2e;
   --color-bg-hover: #252535;
   
+  /* Aliases (shorthand) */
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-tertiary: #1a1a25;
+  --surface: rgba(26, 26, 37, 0.8);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+  --border: rgba(148, 163, 184, 0.1);
+  
   /* Surface Colors */
   --color-surface: rgba(26, 26, 37, 0.8);
   --color-surface-hover: rgba(37, 37, 53, 0.9);

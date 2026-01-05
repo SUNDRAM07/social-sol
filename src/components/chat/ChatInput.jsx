@@ -6,9 +6,14 @@ const ChatInput = ({
   isLoading = false,
   onStop,
   placeholder = "Ask me to create posts, schedule campaigns, analyze trends...",
-  disabled = false 
+  disabled = false,
+  value,
+  onChange
 }) => {
-  const [message, setMessage] = useState('');
+  // Support both controlled and uncontrolled modes
+  const [internalMessage, setInternalMessage] = useState('');
+  const message = value !== undefined ? value : internalMessage;
+  const setMessage = onChange || setInternalMessage;
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef(null);
 
