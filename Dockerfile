@@ -56,5 +56,5 @@ EXPOSE 8000
 # Railway will check /health endpoint
 
 # Start command - Railway sets PORT env var
-# Using sh -c to allow PORT variable substitution
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# TEMP: Using minimal test app to debug deployment issues
+CMD ["sh", "-c", "uvicorn test_minimal:app --host 0.0.0.0 --port ${PORT:-8000}"]
