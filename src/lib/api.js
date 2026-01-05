@@ -2,7 +2,12 @@
 const getApiBaseUrl = () => {
   // Production: Use VITE_API_BASE_URL pointing to Railway backend
   if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '');
+    let url = import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '');
+    // Ensure URL has protocol
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+    return url;
   }
   // Development: Use localhost
   return 'http://localhost:8000';
