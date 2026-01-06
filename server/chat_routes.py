@@ -24,6 +24,7 @@ from database import db_manager
 from auth_routes import get_current_user
 from optimal_times_service import optimal_times_service
 from trend_analyzer_service import trend_analyzer
+from deep_research_engine import deep_research_engine
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
 
@@ -191,102 +192,108 @@ class ChatService:
         }
     
     async def _handle_schedule_posts(self, entities: Dict, user_id: str) -> Dict:
-        """Handle scheduling intent with PERSONALIZED optimal times based on YOUR data"""
-        platforms = entities.get("platforms", ["twitter", "instagram", "linkedin"])
-        industry = entities.get("industry")
+        """
+        Handle scheduling intent with DEEP RESEARCH.
         
-        # FIRST: Try to get personalized times based on user's ACTUAL data
+        Full analysis:
+        - Content topic & audience detection
+        - Real-time trend analysis
+        - Timezone-aware optimal timing
+        - Viral potential scoring
+        - Competitor timing analysis
+        """
+        platforms = entities.get("platforms", ["twitter"])
+        content = entities.get("content", "")  # Content to schedule if provided
+        timezone = entities.get("timezone", "UTC")
+        
+        # If we have content, run DEEP RESEARCH
+        if content:
+            research_result = await deep_research_engine.research_optimal_posting(
+                content=content,
+                platform=platforms[0] if platforms else "twitter",
+                user_timezone=timezone,
+                user_id=user_id
+            )
+            
+            formatted = deep_research_engine.format_research_for_display(research_result)
+            
+            return {
+                "action": "schedule_with_research",
+                "status": "researched",
+                "research_summary": formatted,
+                "timing": {
+                    "optimal_time": research_result.timing_recommendation.optimal_time.isoformat(),
+                    "timezone": research_result.timing_recommendation.timezone,
+                    "confidence": research_result.timing_recommendation.confidence_score,
+                    "viral_potential": research_result.timing_recommendation.viral_potential,
+                    "reasoning": research_result.timing_recommendation.reasoning,
+                },
+                "content_analysis": {
+                    "category": research_result.content_analysis.get("category"),
+                    "type": research_result.content_analysis.get("content_type"),
+                    "hook_strength": research_result.content_analysis.get("hook_strength", {}).get("score", 0),
+                },
+                "audience": {
+                    "who": research_result.audience_profile.primary_demographic,
+                    "timezones": research_result.audience_profile.primary_timezones,
+                },
+                "trends": [t.topic for t in research_result.trending_data[:3]],
+                "suggested_hashtags": research_result.hashtag_suggestions,
+                "improvements": research_result.content_improvements,
+                "actions": [
+                    {
+                        "type": "schedule_optimal",
+                        "label": f"📅 Schedule for {research_result.timing_recommendation.optimal_time.strftime('%a %I:%M %p')}"
+                    },
+                    {
+                        "type": "post_now",
+                        "label": "🚀 Post Now"
+                    },
+                    {
+                        "type": "edit_first",
+                        "label": "✏️ Edit Content First"
+                    }
+                ]
+            }
+        
+        # No content - provide general timing guidance
+        # Get current trending topics
+        trending = await trend_analyzer.get_trending_topics(platforms=platforms)
+        
+        # Get personalized times if we have user data
         personalized_times = {}
-        has_personalized_data = False
-        
         for platform in platforms:
             user_optimal = await trend_analyzer.get_personalized_optimal_times(user_id, platform)
             personalized_times[platform] = user_optimal
-            if user_optimal.get("status") == "personalized":
-                has_personalized_data = True
         
-        # SECOND: Get current trending topics
-        trending = await trend_analyzer.get_trending_topics(platforms=platforms)
-        
-        # THIRD: Fallback to research-based times if no user data
-        if not has_personalized_data:
-            research_recommendations = optimal_times_service.get_optimal_times(
-                platforms=platforms,
-                industry=industry
-            )
-        else:
-            research_recommendations = {}
-        
-        # Format response
-        optimal_times = {}
-        platform_insights = {}
-        
-        for platform in platforms:
-            user_data = personalized_times.get(platform, {})
-            
-            if user_data.get("status") == "personalized":
-                # Use REAL user data
-                optimal_times[platform] = {
-                    "source": "your_data",
-                    "based_on": user_data.get("based_on"),
-                    "confidence": user_data.get("confidence"),
-                    "best_times": [
-                        {
-                            "time": slot.time,
-                            "day": slot.day,
-                            "engagement_rate": slot.engagement_rate,
-                            "sample_size": slot.sample_size,
-                            "reason": slot.reason
-                        }
-                        for slot in user_data.get("best_times", [])
-                    ],
-                    "avoid_times": user_data.get("worst_times", [])
-                }
-                platform_insights[platform] = user_data.get("insights", [])
-            else:
-                # Use research fallback but be honest about it
-                rec = research_recommendations.get(platform)
-                if rec:
-                    optimal_times[platform] = {
-                        "source": "industry_research",
-                        "note": user_data.get("message", "Start posting to get personalized recommendations"),
-                        "best_times": [
-                            {
-                                "time": slot.time,
-                                "day": slot.day,
-                                "score": slot.engagement_score,
-                                "reason": "Based on 2024 industry research (not YOUR data yet)"
-                            }
-                            for slot in rec.best_times[:3]
-                        ]
-                    }
-                    platform_insights[platform] = rec.tips[:2]
+        # Fallback to research-based times
+        research_recommendations = optimal_times_service.get_optimal_times(
+            platforms=platforms,
+            industry=entities.get("industry")
+        )
         
         return {
             "action": "schedule_posts",
-            "status": "ready",
-            "data_source": "personalized" if has_personalized_data else "research_fallback",
-            "optimal_times": optimal_times,
-            "platform_insights": platform_insights,
-            "trending_now": trending.get("trends", [])[:3],
-            "trend_insights": trending.get("insights", []),
-            "recommendation": (
-                "📊 These times are based on YOUR audience's actual engagement patterns!"
-                if has_personalized_data else
-                "📈 Start posting to unlock personalized timing based on YOUR data!"
-            ),
+            "status": "need_content",
+            "message": "Share the content you want to schedule, and I'll do deep research to find the PERFECT time!",
+            "general_optimal_times": {
+                platform: {
+                    "best_times": [
+                        {"time": slot.time, "day": slot.day, "score": slot.engagement_score}
+                        for slot in rec.best_times[:3]
+                    ]
+                }
+                for platform, rec in research_recommendations.items()
+            },
+            "trending_now": [
+                {"topic": t.get("name"), "hashtags": t.get("hashtags", [])}
+                for t in trending.get("trends", [])[:5]
+            ],
+            "tip": "💡 Paste your tweet/post and I'll analyze: topic, audience timezone, trend alignment, competitor timing, and viral potential!",
             "actions": [
                 {
-                    "type": "auto_schedule",
-                    "label": "Auto-Schedule at Optimal Times"
-                },
-                {
-                    "type": "post_now_trending",
-                    "label": "🔥 Post Now (Trending Topic)"
-                },
-                {
-                    "type": "custom_schedule",
-                    "label": "Choose Times Manually"
+                    "type": "paste_content",
+                    "label": "📝 Paste Content for Deep Research"
                 }
             ]
         }
@@ -804,6 +811,92 @@ async def get_smart_scheduling(
             platforms=platform_list
         )
         return recommendation
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============= Deep Research Endpoint =============
+
+class DeepResearchRequest(BaseModel):
+    content: str
+    platform: str = "twitter"
+    timezone: str = "UTC"
+
+
+@router.post("/deep-research")
+async def run_deep_research(
+    request: DeepResearchRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    🔬 DEEP RESEARCH - The full package!
+    
+    Comprehensive analysis before posting:
+    1. Content Analysis (topic, keywords, sentiment, hook strength)
+    2. Audience Intelligence (who, timezone, when they're active)
+    3. Real-time Trends (what's hot, related hashtags)
+    4. Competitor Insights (when top accounts post)
+    5. Optimal Timing (exact time with confidence score)
+    6. Viral Potential Score
+    7. Content Improvement Suggestions
+    8. Hashtag Recommendations
+    """
+    user_id = str(current_user["id"])
+    
+    try:
+        # Run comprehensive research
+        result = await deep_research_engine.research_optimal_posting(
+            content=request.content,
+            platform=request.platform,
+            user_timezone=request.timezone,
+            user_id=user_id
+        )
+        
+        # Format for display
+        formatted_result = deep_research_engine.format_research_for_display(result)
+        
+        # Return both raw data and formatted
+        return {
+            "status": "complete",
+            "formatted": formatted_result,
+            "data": {
+                "content_analysis": result.content_analysis,
+                "audience": {
+                    "demographic": result.audience_profile.primary_demographic,
+                    "age_range": result.audience_profile.age_range,
+                    "timezones": result.audience_profile.primary_timezones,
+                    "peak_hours": result.audience_profile.peak_activity_hours,
+                    "device": result.audience_profile.device_preference,
+                },
+                "timing": {
+                    "optimal_time": result.timing_recommendation.optimal_time.isoformat(),
+                    "timezone": result.timing_recommendation.timezone,
+                    "confidence": result.timing_recommendation.confidence_score,
+                    "viral_potential": result.timing_recommendation.viral_potential,
+                    "reasoning": result.timing_recommendation.reasoning,
+                    "warnings": result.timing_recommendation.warnings,
+                    "action_items": result.timing_recommendation.action_items,
+                    "alternatives": [
+                        {"time": t.isoformat(), "score": s}
+                        for t, s in result.timing_recommendation.alternative_times
+                    ]
+                },
+                "trends": [
+                    {
+                        "topic": t.topic,
+                        "hashtags": t.related_hashtags,
+                        "is_growing": not t.is_peak,
+                        "news": t.news_events
+                    }
+                    for t in result.trending_data[:5]
+                ],
+                "hashtags": result.hashtag_suggestions,
+                "improvements": result.content_improvements,
+                "competitors": result.competitor_insights
+            },
+            "research_timestamp": result.research_timestamp
+        }
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
