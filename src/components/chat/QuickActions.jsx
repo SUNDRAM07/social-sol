@@ -118,3 +118,4 @@ const QuickActions = ({ onSelect, compact = false }) => {
 
 export default QuickActions;
 
+

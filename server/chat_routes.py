@@ -23,6 +23,7 @@ from intent_parser import intent_parser, Intent, ParsedIntent
 from database import db_manager
 from auth_routes import get_current_user
 from optimal_times_service import optimal_times_service
+from trend_analyzer_service import trend_analyzer
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
 
@@ -190,62 +191,102 @@ class ChatService:
         }
     
     async def _handle_schedule_posts(self, entities: Dict, user_id: str) -> Dict:
-        """Handle scheduling intent with AI-powered optimal times"""
+        """Handle scheduling intent with PERSONALIZED optimal times based on YOUR data"""
         platforms = entities.get("platforms", ["twitter", "instagram", "linkedin"])
         industry = entities.get("industry")
         
-        # Get intelligent recommendations from optimal times service
-        recommendations = optimal_times_service.get_optimal_times(
-            platforms=platforms,
-            industry=industry
-        )
+        # FIRST: Try to get personalized times based on user's ACTUAL data
+        personalized_times = {}
+        has_personalized_data = False
         
-        # Format optimal times for response
+        for platform in platforms:
+            user_optimal = await trend_analyzer.get_personalized_optimal_times(user_id, platform)
+            personalized_times[platform] = user_optimal
+            if user_optimal.get("status") == "personalized":
+                has_personalized_data = True
+        
+        # SECOND: Get current trending topics
+        trending = await trend_analyzer.get_trending_topics(platforms=platforms)
+        
+        # THIRD: Fallback to research-based times if no user data
+        if not has_personalized_data:
+            research_recommendations = optimal_times_service.get_optimal_times(
+                platforms=platforms,
+                industry=industry
+            )
+        else:
+            research_recommendations = {}
+        
+        # Format response
         optimal_times = {}
-        platform_tips = {}
+        platform_insights = {}
         
-        for platform, rec in recommendations.items():
-            optimal_times[platform] = [
-                {
-                    "time": slot.time,
-                    "day": slot.day,
-                    "score": slot.engagement_score,
-                    "reason": slot.reason
+        for platform in platforms:
+            user_data = personalized_times.get(platform, {})
+            
+            if user_data.get("status") == "personalized":
+                # Use REAL user data
+                optimal_times[platform] = {
+                    "source": "your_data",
+                    "based_on": user_data.get("based_on"),
+                    "confidence": user_data.get("confidence"),
+                    "best_times": [
+                        {
+                            "time": slot.time,
+                            "day": slot.day,
+                            "engagement_rate": slot.engagement_rate,
+                            "sample_size": slot.sample_size,
+                            "reason": slot.reason
+                        }
+                        for slot in user_data.get("best_times", [])
+                    ],
+                    "avoid_times": user_data.get("worst_times", [])
                 }
-                for slot in rec.best_times[:3]
-            ]
-            platform_tips[platform] = rec.tips[:2]
-        
-        # Generate weekly schedule suggestion
-        weekly_schedule = optimal_times_service.get_weekly_schedule(
-            platforms=platforms,
-            posts_per_week=7,
-            industry=industry
-        )
-        
-        # Format recommendation text for AI to include
-        recommendation_text = optimal_times_service.format_recommendation_text(recommendations)
+                platform_insights[platform] = user_data.get("insights", [])
+            else:
+                # Use research fallback but be honest about it
+                rec = research_recommendations.get(platform)
+                if rec:
+                    optimal_times[platform] = {
+                        "source": "industry_research",
+                        "note": user_data.get("message", "Start posting to get personalized recommendations"),
+                        "best_times": [
+                            {
+                                "time": slot.time,
+                                "day": slot.day,
+                                "score": slot.engagement_score,
+                                "reason": "Based on 2024 industry research (not YOUR data yet)"
+                            }
+                            for slot in rec.best_times[:3]
+                        ]
+                    }
+                    platform_insights[platform] = rec.tips[:2]
         
         return {
             "action": "schedule_posts",
             "status": "ready",
+            "data_source": "personalized" if has_personalized_data else "research_fallback",
             "optimal_times": optimal_times,
-            "platform_tips": platform_tips,
-            "weekly_schedule": weekly_schedule,
-            "recommendation_text": recommendation_text,
-            "note": "AI-analyzed optimal times based on 2024 engagement data",
+            "platform_insights": platform_insights,
+            "trending_now": trending.get("trends", [])[:3],
+            "trend_insights": trending.get("insights", []),
+            "recommendation": (
+                "📊 These times are based on YOUR audience's actual engagement patterns!"
+                if has_personalized_data else
+                "📈 Start posting to unlock personalized timing based on YOUR data!"
+            ),
             "actions": [
                 {
                     "type": "auto_schedule",
-                    "label": "Auto-Schedule All"
+                    "label": "Auto-Schedule at Optimal Times"
+                },
+                {
+                    "type": "post_now_trending",
+                    "label": "🔥 Post Now (Trending Topic)"
                 },
                 {
                     "type": "custom_schedule",
                     "label": "Choose Times Manually"
-                },
-                {
-                    "type": "view_weekly",
-                    "label": "View Weekly Plan"
                 }
             ]
         }
@@ -654,6 +695,115 @@ async def delete_conversation(
             "user_id": str(current_user["id"])
         })
         return {"status": "deleted", "conversation_id": conversation_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============= Trend & Timing Endpoints =============
+
+@router.get("/trends")
+async def get_trending_topics(
+    platforms: str = "twitter,instagram",
+    category: str = None,
+    limit: int = 10,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get real-time trending topics across platforms.
+    Use this to create timely, relevant content.
+    """
+    platform_list = [p.strip() for p in platforms.split(",")]
+    
+    try:
+        trends = await trend_analyzer.get_trending_topics(
+            platforms=platform_list,
+            category=category,
+            limit=limit
+        )
+        return trends
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/optimal-times/{platform}")
+async def get_optimal_times(
+    platform: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get PERSONALIZED optimal posting times based on YOUR engagement data.
+    Falls back to industry research if you don't have enough posts yet.
+    """
+    user_id = str(current_user["id"])
+    
+    try:
+        # Get personalized times from user's actual data
+        personalized = await trend_analyzer.get_personalized_optimal_times(user_id, platform)
+        
+        if personalized.get("status") == "personalized":
+            return {
+                "source": "your_engagement_data",
+                "confidence": personalized.get("confidence"),
+                "based_on": personalized.get("based_on"),
+                "best_times": [
+                    {
+                        "time": slot.time,
+                        "day": slot.day,
+                        "engagement_rate": slot.engagement_rate,
+                        "sample_size": slot.sample_size,
+                        "reason": slot.reason
+                    }
+                    for slot in personalized.get("best_times", [])
+                ],
+                "worst_times": personalized.get("worst_times", []),
+                "insights": personalized.get("insights", [])
+            }
+        else:
+            # Return fallback with research-based times
+            research = optimal_times_service.get_optimal_times([platform])
+            rec = research.get(platform)
+            
+            return {
+                "source": "industry_research",
+                "message": personalized.get("message"),
+                "recommendation": personalized.get("recommendation"),
+                "best_times": [
+                    {
+                        "time": slot.time,
+                        "day": slot.day,
+                        "score": slot.engagement_score,
+                        "reason": slot.reason
+                    }
+                    for slot in rec.best_times[:5]
+                ] if rec else personalized.get("fallback_times", []),
+                "tips": rec.tips if rec else []
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/smart-schedule")
+async def get_smart_scheduling(
+    content: str,
+    platforms: str = "twitter",
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get smart scheduling recommendation based on:
+    - Your audience's engagement patterns
+    - Current trending topics
+    - Content-trend alignment
+    """
+    user_id = str(current_user["id"])
+    platform_list = [p.strip() for p in platforms.split(",")]
+    
+    try:
+        recommendation = await trend_analyzer.get_smart_posting_recommendation(
+            user_id=user_id,
+            content=content,
+            platforms=platform_list
+        )
+        return recommendation
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

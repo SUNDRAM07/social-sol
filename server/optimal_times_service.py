@@ -289,3 +289,4 @@ class OptimalTimesService:
 # Singleton instance
 optimal_times_service = OptimalTimesService()
 
+
