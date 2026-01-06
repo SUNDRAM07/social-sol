@@ -7,7 +7,7 @@ import {
   Paperclip, Mic, StopCircle, ChevronRight, Star
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { sendChatMessage, listConversations, getConversationHistory, deleteConversation } from '../lib/chatApi';
+import { sendChatMessage, streamChatMessage, listConversations, getConversationHistory, deleteConversation } from '../lib/chatApi';
 import { useAuthStore } from '../store/authStore';
 
 // ============================================
@@ -44,7 +44,7 @@ const TypingIndicator = () => (
 // ============================================
 // MESSAGE COMPONENT
 // ============================================
-const ChatMessage = ({ message, onRegenerate, onCopy }) => {
+const ChatMessage = ({ message, onRegenerate, onCopy, isStreaming = false }) => {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
 
@@ -117,6 +117,9 @@ const ChatMessage = ({ message, onRegenerate, onCopy }) => {
           
           <div className="prose prose-invert max-w-none">
             {renderContent(message.content)}
+            {isStreaming && (
+              <span className="inline-block w-2 h-5 ml-1 bg-[#14F195] animate-pulse rounded-sm" />
+            )}
           </div>
 
           {/* Actions */}
@@ -411,6 +414,8 @@ const AgentChat = () => {
   
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingContent, setStreamingContent] = useState('');
   const [error, setError] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
@@ -419,7 +424,7 @@ const AgentChat = () => {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, streamingContent]);
 
   useEffect(() => {
     if (isAuthenticated) loadConversations();
@@ -451,23 +456,76 @@ const AgentChat = () => {
     };
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
+    setIsStreaming(true);
+    setStreamingContent('');
 
     try {
-      const response = await sendChatMessage(content, activeConversation);
-      
-      if (!activeConversation && response.conversation_id) {
-        setActiveConversation(response.conversation_id);
-      }
-      
-      setMessages(prev => [...prev, {
-        id: response.message_id || (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: response.content,
-        timestamp: response.timestamp,
-      }]);
-      
-      loadConversations();
+      // Use streaming API for real-time typing effect
+      await streamChatMessage(
+        content,
+        activeConversation,
+        // onChunk - called as content streams in
+        (partialContent, intent, actions) => {
+          setStreamingContent(partialContent);
+        },
+        // onComplete - called when stream is done
+        (result) => {
+          setIsStreaming(false);
+          setStreamingContent('');
+          
+          if (result.conversationId && !activeConversation) {
+            setActiveConversation(result.conversationId);
+          }
+          
+          setMessages(prev => [...prev, {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: result.content,
+            timestamp: new Date().toISOString(),
+            intent: result.intent,
+            actions: result.actions,
+          }]);
+          
+          loadConversations();
+          setIsLoading(false);
+        },
+        // onError - fallback to non-streaming
+        async (err) => {
+          console.error('Streaming failed, falling back:', err);
+          setIsStreaming(false);
+          setStreamingContent('');
+          
+          try {
+            // Fallback to regular API
+            const response = await sendChatMessage(content, activeConversation);
+            
+            if (!activeConversation && response.conversation_id) {
+              setActiveConversation(response.conversation_id);
+            }
+            
+            setMessages(prev => [...prev, {
+              id: response.message_id || (Date.now() + 1).toString(),
+              role: 'assistant',
+              content: response.content,
+              timestamp: response.timestamp,
+            }]);
+            
+            loadConversations();
+          } catch (fallbackErr) {
+            // Use local fallback
+            setMessages(prev => [...prev, {
+              id: (Date.now() + 1).toString(),
+              role: 'assistant',
+              content: generateFallbackResponse(content),
+              timestamp: new Date().toISOString(),
+            }]);
+          }
+          setIsLoading(false);
+        }
+      );
     } catch (err) {
+      setIsStreaming(false);
+      setStreamingContent('');
       // Fallback response
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
@@ -475,7 +533,6 @@ const AgentChat = () => {
         content: generateFallbackResponse(content),
         timestamp: new Date().toISOString(),
       }]);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -629,7 +686,21 @@ const AgentChat = () => {
                 />
               ))}
               
-              {isLoading && (
+              {/* Streaming Message Display */}
+              {isStreaming && streamingContent && (
+                <ChatMessage 
+                  message={{
+                    id: 'streaming',
+                    role: 'assistant',
+                    content: streamingContent,
+                    timestamp: new Date().toISOString(),
+                  }}
+                  isStreaming={true}
+                />
+              )}
+              
+              {/* Loading Indicator (only when not streaming) */}
+              {isLoading && !streamingContent && (
                 <div className="py-6 px-4 md:px-8 bg-white/[0.02]">
                   <div className="max-w-3xl mx-auto flex gap-4">
                     <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center shadow-lg shadow-[#9945FF]/20">

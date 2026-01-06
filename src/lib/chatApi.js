@@ -33,52 +33,92 @@ export async function sendChatMessage(content, conversationId = null, context = 
 }
 
 /**
- * Stream a response from the AI agent (SSE)
+ * Stream a response from the AI agent using fetch + ReadableStream
+ * (More reliable than EventSource for authenticated requests)
  */
-export function streamChatMessage(conversationId, message, onChunk, onComplete, onError) {
+export async function streamChatMessage(content, conversationId, onChunk, onComplete, onError) {
   const token = useAuthStore.getState().token;
-  const url = apiUrl(`/chat/stream/${conversationId}?message=${encodeURIComponent(message)}`);
   
-  const eventSource = new EventSource(url);
-  let content = '';
-  let intent = null;
-  let actions = null;
-  
-  eventSource.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      
-      switch (data.type) {
-        case 'intent':
-          intent = data.data;
-          break;
-        case 'action':
-          actions = data.data;
-          break;
-        case 'content':
-          content += data.data;
-          onChunk(content, intent, actions);
-          break;
-        case 'done':
-          eventSource.close();
-          onComplete({ content, intent, actions });
-          break;
-        case 'error':
-          eventSource.close();
-          onError(new Error(data.data));
-          break;
-      }
-    } catch (e) {
-      console.error('SSE parse error:', e);
+  try {
+    const response = await fetch(apiUrl('/chat/stream'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'text/event-stream',
+      },
+      body: JSON.stringify({
+        content,
+        conversation_id: conversationId,
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Stream request failed: ${response.status}`);
     }
-  };
-  
-  eventSource.onerror = (error) => {
-    eventSource.close();
+    
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    
+    let fullContent = '';
+    let intent = null;
+    let actions = null;
+    let newConversationId = conversationId;
+    let buffer = '';
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      
+      if (done) break;
+      
+      buffer += decoder.decode(value, { stream: true });
+      
+      // Process complete SSE messages
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || ''; // Keep incomplete line in buffer
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            
+            switch (data.type) {
+              case 'intent':
+                intent = data.data;
+                break;
+              case 'action':
+                actions = data.data;
+                break;
+              case 'content':
+                fullContent += data.data;
+                onChunk(fullContent, intent, actions);
+                break;
+              case 'done':
+                newConversationId = data.conversation_id || conversationId;
+                onComplete({ 
+                  content: fullContent, 
+                  intent, 
+                  actions, 
+                  conversationId: newConversationId 
+                });
+                return;
+              case 'error':
+                onError(new Error(data.data));
+                return;
+            }
+          } catch (e) {
+            // Ignore parse errors for incomplete chunks
+          }
+        }
+      }
+    }
+    
+    // If we get here without 'done', still call onComplete
+    onComplete({ content: fullContent, intent, actions, conversationId: newConversationId });
+    
+  } catch (error) {
     onError(error);
-  };
-  
-  return () => eventSource.close();
+  }
 }
 
 /**

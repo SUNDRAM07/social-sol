@@ -22,6 +22,7 @@ import asyncio
 from intent_parser import intent_parser, Intent, ParsedIntent
 from database import db_manager
 from auth_routes import get_current_user
+from optimal_times_service import optimal_times_service
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
 
@@ -189,28 +190,50 @@ class ChatService:
         }
     
     async def _handle_schedule_posts(self, entities: Dict, user_id: str) -> Dict:
-        """Handle scheduling intent with optimal times"""
-        platforms = entities.get("platforms", [])
+        """Handle scheduling intent with AI-powered optimal times"""
+        platforms = entities.get("platforms", ["twitter", "instagram", "linkedin"])
+        industry = entities.get("industry")
         
-        # Platform-specific optimal times (simplified)
-        optimal_times = {
-            "twitter": ["9:00 AM", "12:00 PM", "5:00 PM"],
-            "instagram": ["11:00 AM", "2:00 PM", "7:00 PM"],
-            "linkedin": ["8:00 AM", "12:00 PM", "5:30 PM"],
-            "facebook": ["9:00 AM", "1:00 PM", "4:00 PM"],
-            "reddit": ["6:00 AM", "8:00 AM", "12:00 PM"]
-        }
+        # Get intelligent recommendations from optimal times service
+        recommendations = optimal_times_service.get_optimal_times(
+            platforms=platforms,
+            industry=industry
+        )
         
-        suggestions = {}
-        for platform in platforms or optimal_times.keys():
-            if platform in optimal_times:
-                suggestions[platform] = optimal_times[platform]
+        # Format optimal times for response
+        optimal_times = {}
+        platform_tips = {}
+        
+        for platform, rec in recommendations.items():
+            optimal_times[platform] = [
+                {
+                    "time": slot.time,
+                    "day": slot.day,
+                    "score": slot.engagement_score,
+                    "reason": slot.reason
+                }
+                for slot in rec.best_times[:3]
+            ]
+            platform_tips[platform] = rec.tips[:2]
+        
+        # Generate weekly schedule suggestion
+        weekly_schedule = optimal_times_service.get_weekly_schedule(
+            platforms=platforms,
+            posts_per_week=7,
+            industry=industry
+        )
+        
+        # Format recommendation text for AI to include
+        recommendation_text = optimal_times_service.format_recommendation_text(recommendations)
         
         return {
             "action": "schedule_posts",
             "status": "ready",
-            "optimal_times": suggestions,
-            "note": "Best times based on general engagement patterns. Your specific audience may vary.",
+            "optimal_times": optimal_times,
+            "platform_tips": platform_tips,
+            "weekly_schedule": weekly_schedule,
+            "recommendation_text": recommendation_text,
+            "note": "AI-analyzed optimal times based on 2024 engagement data",
             "actions": [
                 {
                     "type": "auto_schedule",
@@ -219,6 +242,10 @@ class ChatService:
                 {
                     "type": "custom_schedule",
                     "label": "Choose Times Manually"
+                },
+                {
+                    "type": "view_weekly",
+                    "label": "View Weekly Plan"
                 }
             ]
         }
@@ -431,47 +458,107 @@ async def send_message(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/stream/{conversation_id}")
+@router.post("/stream")
 async def stream_response(
-    conversation_id: str,
-    message: str,
+    message: ChatMessage,
     current_user: dict = Depends(get_current_user)
 ):
     """
     Stream a response using Server-Sent Events (SSE)
-    for ChatGPT-like typing effect
+    for ChatGPT-like typing effect with real Groq streaming
     """
     async def generate():
         try:
+            user_id = str(current_user["id"])
+            conversation_id = message.conversation_id or str(uuid.uuid4())
+            
             # Parse intent first
-            parsed = await intent_parser.parse(message)
+            parsed = await intent_parser.parse(message.content)
             
             # Yield intent info
             yield f"data: {json.dumps({'type': 'intent', 'data': {'intent': parsed.intent.value, 'entities': parsed.entities}})}\n\n"
             
             # Execute action
-            action_result = await chat_service._execute_action(parsed, str(current_user["id"]))
+            action_result = await chat_service._execute_action(parsed, user_id)
             
             if action_result:
                 yield f"data: {json.dumps({'type': 'action', 'data': action_result})}\n\n"
             
-            # Stream the response character by character (simulated)
-            response = await chat_service._generate_response(
-                message=message,
-                parsed_intent=parsed,
-                action_result=action_result,
-                user_id=str(current_user["id"])
-            )
+            # Stream from Groq API
+            full_response = ""
             
-            # Yield characters with small delays for typing effect
-            for i, char in enumerate(response):
-                yield f"data: {json.dumps({'type': 'content', 'data': char})}\n\n"
-                if i % 5 == 0:  # Small delay every 5 chars
-                    await asyncio.sleep(0.02)
+            if chat_service.groq_api_key:
+                system_prompt = """You are Social Sol AI, a friendly AI social media assistant.
+Be conversational, helpful, and concise. Use markdown formatting for structure.
+Help users create content, schedule posts, analyze performance, and generate ideas."""
+                
+                context_parts = [f"User message: {message.content}"]
+                context_parts.append(f"Intent: {parsed.intent.value}")
+                if parsed.entities:
+                    context_parts.append(f"Entities: {json.dumps(parsed.entities)}")
+                if action_result:
+                    context_parts.append(f"Action result: {json.dumps(action_result)}")
+                
+                user_prompt = "\n".join(context_parts)
+                
+                try:
+                    async with httpx.AsyncClient() as client:
+                        async with client.stream(
+                            "POST",
+                            chat_service.groq_api_url,
+                            headers={
+                                "Authorization": f"Bearer {chat_service.groq_api_key}",
+                                "Content-Type": "application/json"
+                            },
+                            json={
+                                "model": chat_service.model,
+                                "messages": [
+                                    {"role": "system", "content": system_prompt},
+                                    {"role": "user", "content": user_prompt}
+                                ],
+                                "temperature": 0.7,
+                                "max_tokens": 500,
+                                "stream": True
+                            },
+                            timeout=30.0
+                        ) as response:
+                            async for line in response.aiter_lines():
+                                if line.startswith("data: "):
+                                    data = line[6:]
+                                    if data == "[DONE]":
+                                        break
+                                    try:
+                                        chunk = json.loads(data)
+                                        if "choices" in chunk and len(chunk["choices"]) > 0:
+                                            delta = chunk["choices"][0].get("delta", {})
+                                            content = delta.get("content", "")
+                                            if content:
+                                                full_response += content
+                                                yield f"data: {json.dumps({'type': 'content', 'data': content})}\n\n"
+                                    except json.JSONDecodeError:
+                                        pass
+                except Exception as e:
+                    print(f"Groq streaming error: {e}")
+                    # Fallback to non-streaming
+                    full_response = parsed.suggested_response or "I'm here to help with your social media needs!"
+                    yield f"data: {json.dumps({'type': 'content', 'data': full_response})}\n\n"
+            else:
+                # No API key - use fallback
+                full_response = parsed.suggested_response or "I'm here to help with your social media needs!"
+                # Stream character by character for effect
+                for char in full_response:
+                    yield f"data: {json.dumps({'type': 'content', 'data': char})}\n\n"
+                    await asyncio.sleep(0.01)
             
-            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+            # Save messages
+            await chat_service._save_message(conversation_id, user_id, "user", message.content)
+            await chat_service._save_message(conversation_id, user_id, "assistant", full_response)
+            
+            # Done
+            yield f"data: {json.dumps({'type': 'done', 'conversation_id': conversation_id})}\n\n"
             
         except Exception as e:
+            print(f"Stream error: {e}")
             yield f"data: {json.dumps({'type': 'error', 'data': str(e)})}\n\n"
     
     return StreamingResponse(
@@ -480,6 +567,7 @@ async def stream_response(
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
         }
     )
 
