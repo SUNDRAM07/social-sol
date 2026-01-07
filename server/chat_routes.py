@@ -1125,6 +1125,99 @@ async def check_api_status(
 
 # ============= FREE Research Endpoints (No API Keys Needed!) =============
 
+@router.get("/free/twitter/{country}")
+async def get_free_twitter_trends(
+    country: str = "us",  # us, uk, india, worldwide, etc.
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    🆓 FREE - Get REAL Twitter trending topics!
+    
+    No Twitter API key required! Uses TrendsTools free API.
+    
+    Countries: us, uk, india, brazil, worldwide, canada, australia, germany, france, japan
+    """
+    try:
+        trends = await free_research.get_twitter_trends_free(country)
+        return {
+            "source": "trendstools_api",
+            "platform": "twitter",
+            "country": country,
+            "cost": "FREE",
+            "is_real_data": trends[0].is_real_data if trends else False,
+            "trends": [
+                {
+                    "topic": t.topic,
+                    "volume": t.volume,
+                    "velocity": round(t.velocity, 2),
+                    "url": t.url
+                }
+                for t in trends
+            ],
+            "fetched_at": trends[0].fetched_at if trends else None,
+            "note": "Real Twitter trends without $100/mo API cost!"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/free/google-trends-trendstools/{country}")
+async def get_free_google_trends_trendstools(
+    country: str = "us",
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    🆓 FREE - Get Google Trends via TrendsTools.
+    
+    No API key required!
+    """
+    try:
+        trends = await free_research.get_google_trends_via_trendstools(country)
+        return {
+            "source": "trendstools_api",
+            "platform": "google_trends",
+            "country": country,
+            "cost": "FREE",
+            "is_real_data": trends[0].is_real_data if trends else False,
+            "trends": [
+                {
+                    "topic": t.topic,
+                    "traffic": t.volume,
+                    "url": t.url
+                }
+                for t in trends
+            ],
+            "fetched_at": trends[0].fetched_at if trends else None
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/free/youtube/{country}")
+async def get_free_youtube_trends(
+    country: str = "us",
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    🆓 FREE - Get YouTube trending videos.
+    
+    No API key required! Uses TrendsTools free API.
+    """
+    try:
+        videos = await free_research.get_youtube_trends_free(country)
+        return {
+            "source": "trendstools_api",
+            "platform": "youtube",
+            "country": country,
+            "cost": "FREE",
+            "is_real_data": len(videos) > 0,
+            "videos": videos,
+            "note": "Free YouTube trends without YouTube API quota!"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/free/reddit/{category}")
 async def get_free_reddit_trends(
     category: str,  # crypto, ai, tech, defi, startup, nft
@@ -1236,21 +1329,25 @@ async def get_free_google_trends(
 async def comprehensive_free_research_endpoint(
     topic: str,
     category: str = "crypto",
+    country: str = "us",
     current_user: dict = Depends(get_current_user)
 ):
     """
-    🆓 FREE COMPREHENSIVE RESEARCH
+    🆓 FREE COMPREHENSIVE RESEARCH - THE FULL PACKAGE!
     
     Fetches from ALL free sources:
-    - Reddit (public API)
-    - RSS News Feeds
-    - CoinGecko (crypto data)
-    - Groq AI analysis (free tier)
+    - 🐦 Twitter Trends (via TrendsTools - FREE!)
+    - 📈 Google Trends (via TrendsTools - FREE!)
+    - 📺 YouTube Trends (via TrendsTools - FREE!)
+    - 🟠 Reddit Hot Posts (public API - FREE!)
+    - 📰 RSS News Feeds (FREE!)
+    - 💰 CoinGecko crypto data (FREE!)
+    - 🤖 Groq AI analysis (FREE tier!)
     
-    NO paid APIs required!
+    ZERO paid APIs required! Total cost: $0.00
     """
     try:
-        result = await free_research.comprehensive_free_research(topic, category)
+        result = await free_research.comprehensive_free_research(topic, category, country)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -1266,6 +1363,24 @@ async def check_free_api_status():
     
     return {
         "free_sources": {
+            "twitter_trends": {
+                "status": "✅ FREE via TrendsTools!",
+                "api_key_required": False,
+                "endpoint": "/chat/free/twitter/{country}",
+                "note": "REAL Twitter trends without $100/mo API cost!"
+            },
+            "google_trends": {
+                "status": "✅ FREE via TrendsTools!",
+                "api_key_required": False,
+                "endpoint": "/chat/free/google-trends-trendstools/{country}",
+                "note": "No SerpAPI needed!"
+            },
+            "youtube_trends": {
+                "status": "✅ FREE via TrendsTools!",
+                "api_key_required": False,
+                "endpoint": "/chat/free/youtube/{country}",
+                "note": "Trending videos without YouTube API quota"
+            },
             "reddit": {
                 "status": "✅ Always FREE",
                 "api_key_required": False,
@@ -1284,12 +1399,6 @@ async def check_free_api_status():
                 "endpoint": "/chat/free/crypto",
                 "note": "Great for crypto market data"
             },
-            "google_trends": {
-                "status": "✅ FREE (rate limited)",
-                "api_key_required": False,
-                "endpoint": "/chat/free/google-trends/{keyword}",
-                "note": "Uses PyTrends library, may be rate limited"
-            },
             "groq_ai": {
                 "status": "✅ FREE tier" if os.getenv("GROQ_API_KEY") else "⚠️ Need GROQ_API_KEY",
                 "api_key_required": True,
@@ -1298,11 +1407,30 @@ async def check_free_api_status():
                 "note": "Generous free tier - 30 RPM"
             }
         },
-        "paid_sources_not_used": {
-            "twitter_api": "$100+/month - NOT required",
-            "newsapi": "$449/month for production - NOT required (we use RSS)",
-            "serpapi": "$75+/month - NOT required (we use PyTrends)"
+        "paid_sources_bypassed": {
+            "twitter_api": {
+                "official_cost": "$100-5000/month",
+                "our_solution": "TrendsTools API (FREE)",
+                "savings": "100%"
+            },
+            "newsapi": {
+                "official_cost": "$449/month for production",
+                "our_solution": "RSS Feeds (FREE)",
+                "savings": "100%"
+            },
+            "serpapi": {
+                "official_cost": "$75+/month",
+                "our_solution": "TrendsTools + PyTrends (FREE)",
+                "savings": "100%"
+            },
+            "youtube_api": {
+                "official_cost": "Quota limited",
+                "our_solution": "TrendsTools API (FREE)",
+                "savings": "100%"
+            }
         },
-        "recommendation": "Only GROQ_API_KEY is needed for full functionality!"
+        "total_monthly_savings": "$624+ (Twitter $100 + NewsAPI $449 + SerpAPI $75)",
+        "recommendation": "Only GROQ_API_KEY is needed for full functionality!",
+        "comprehensive_endpoint": "POST /chat/free/comprehensive - Gets ALL data at once!"
     }
 

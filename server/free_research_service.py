@@ -9,9 +9,11 @@ HONEST about what's actually free:
 3. Groq AI for trend analysis (generous free tier)
 4. RSS News Feeds (completely free)
 5. CoinGecko API (free for crypto data)
+6. TrendsTools API - FREE Twitter/Google/YouTube trends! No API key!
+7. Nitter instances - FREE Twitter data scraping
 
 ⚠️ PAID Sources (NOT included):
-- Twitter/X API - $100/mo minimum for useful access
+- Official Twitter/X API - $100/mo minimum
 - NewsAPI - Free only on localhost, $449/mo for production
 - Official Google Trends API - Requires SerpAPI ($75+/mo)
 """
@@ -25,6 +27,7 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from collections import defaultdict
+import random
 
 
 @dataclass
@@ -81,6 +84,219 @@ class FreeResearchService:
                 "https://www.entrepreneur.com/latest.rss",
             ],
         }
+        
+        # TrendsTools FREE API - No key needed!
+        self.trendstools_base = "https://trendstools.net/json"
+        
+        # Country codes for TrendsTools
+        self.trendstools_countries = {
+            "us": "united-states",
+            "uk": "united-kingdom",
+            "india": "india",
+            "brazil": "brazil",
+            "worldwide": "worldwide",
+            "canada": "canada",
+            "australia": "australia",
+            "germany": "germany",
+            "france": "france",
+            "japan": "japan",
+        }
+        
+        # Working Nitter instances (public Twitter frontends)
+        self.nitter_instances = [
+            "https://nitter.privacydev.net",
+            "https://nitter.poast.org",
+            "https://nitter.woodland.cafe",
+        ]
+    
+    # ==================== TRENDSTOOLS API (FREE!) ====================
+    
+    async def get_twitter_trends_free(
+        self,
+        country: str = "us"
+    ) -> List[FreeTrendData]:
+        """
+        🆓 FREE Twitter Trends via TrendsTools API!
+        
+        No API key required! Returns real Twitter trending topics.
+        
+        Countries: us, uk, india, brazil, worldwide, canada, australia, etc.
+        """
+        country_code = self.trendstools_countries.get(country.lower(), "united-states")
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.trendstools_base}/twitter/{country_code}",
+                    timeout=15.0,
+                    headers={"User-Agent": "SocialAnywhere/1.0"}
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    trends = []
+                    
+                    # TrendsTools returns array of trend objects
+                    for i, trend in enumerate(data[:25] if isinstance(data, list) else []):
+                        name = trend.get("name") or trend.get("query") or str(trend)
+                        volume = trend.get("tweet_volume") or trend.get("volume")
+                        
+                        trends.append(FreeTrendData(
+                            topic=name,
+                            source="twitter_via_trendstools",
+                            volume=volume,
+                            velocity=1.5 if i < 5 else 1.0,  # Top 5 are hottest
+                            url=trend.get("url") or f"https://twitter.com/search?q={name}",
+                            related_topics=[country],
+                            sentiment="neutral",
+                            fetched_at=datetime.utcnow().isoformat(),
+                            is_real_data=True
+                        ))
+                    
+                    return trends
+                else:
+                    print(f"⚠️ TrendsTools returned {response.status_code}")
+                    
+        except Exception as e:
+            print(f"❌ TrendsTools API failed: {e}")
+        
+        # Fallback to Nitter scraping
+        return await self._scrape_nitter_trends()
+    
+    async def get_google_trends_via_trendstools(
+        self,
+        country: str = "us"
+    ) -> List[FreeTrendData]:
+        """
+        🆓 FREE Google Trends via TrendsTools API!
+        
+        No API key required!
+        """
+        country_code = self.trendstools_countries.get(country.lower(), "united-states")
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.trendstools_base}/google/{country_code}",
+                    timeout=15.0,
+                    headers={"User-Agent": "SocialAnywhere/1.0"}
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    trends = []
+                    
+                    for i, trend in enumerate(data[:20] if isinstance(data, list) else []):
+                        name = trend.get("title") or trend.get("query") or str(trend)
+                        
+                        trends.append(FreeTrendData(
+                            topic=name,
+                            source="google_via_trendstools",
+                            volume=trend.get("traffic") or trend.get("formattedTraffic"),
+                            velocity=1.5 if i < 5 else 1.0,
+                            url=trend.get("url") or f"https://trends.google.com/trends/explore?q={name}",
+                            related_topics=[country, "google_trends"],
+                            sentiment="neutral",
+                            fetched_at=datetime.utcnow().isoformat(),
+                            is_real_data=True
+                        ))
+                    
+                    return trends
+                    
+        except Exception as e:
+            print(f"❌ TrendsTools Google API failed: {e}")
+        
+        return []
+    
+    async def get_youtube_trends_free(
+        self,
+        country: str = "us"
+    ) -> List[Dict]:
+        """
+        🆓 FREE YouTube Trends via TrendsTools API!
+        
+        No API key required!
+        """
+        country_code = self.trendstools_countries.get(country.lower(), "united-states")
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.trendstools_base}/youtube/{country_code}",
+                    timeout=15.0,
+                    headers={"User-Agent": "SocialAnywhere/1.0"}
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    videos = []
+                    
+                    for video in data[:15] if isinstance(data, list) else []:
+                        videos.append({
+                            "title": video.get("title", ""),
+                            "channel": video.get("channelTitle") or video.get("channel", ""),
+                            "views": video.get("viewCount") or video.get("views", ""),
+                            "url": video.get("url") or video.get("link", ""),
+                            "thumbnail": video.get("thumbnail", ""),
+                            "is_real_data": True
+                        })
+                    
+                    return videos
+                    
+        except Exception as e:
+            print(f"❌ TrendsTools YouTube API failed: {e}")
+        
+        return []
+    
+    # ==================== NITTER SCRAPING (FREE BACKUP) ====================
+    
+    async def _scrape_nitter_trends(self) -> List[FreeTrendData]:
+        """
+        Fallback: Scrape Twitter trends from Nitter instances.
+        Nitter is a free, open-source Twitter frontend.
+        """
+        for instance in self.nitter_instances:
+            try:
+                async with httpx.AsyncClient() as client:
+                    # Nitter shows trends on the main page
+                    response = await client.get(
+                        f"{instance}/",
+                        timeout=10.0,
+                        headers={"User-Agent": "Mozilla/5.0"}
+                    )
+                    
+                    if response.status_code == 200:
+                        # Parse HTML for trends (basic extraction)
+                        from bs4 import BeautifulSoup
+                        soup = BeautifulSoup(response.text, 'html.parser')
+                        
+                        trends = []
+                        # Nitter shows trends in a specific section
+                        trend_elements = soup.select('.trend-link') or soup.select('[class*="trend"]')
+                        
+                        for elem in trend_elements[:20]:
+                            name = elem.get_text(strip=True)
+                            if name and len(name) > 1:
+                                trends.append(FreeTrendData(
+                                    topic=name,
+                                    source="nitter",
+                                    volume=None,
+                                    velocity=1.0,
+                                    url=f"https://twitter.com/search?q={name}",
+                                    related_topics=["twitter"],
+                                    sentiment="neutral",
+                                    fetched_at=datetime.utcnow().isoformat(),
+                                    is_real_data=True
+                                ))
+                        
+                        if trends:
+                            return trends
+                            
+            except Exception as e:
+                print(f"⚠️ Nitter {instance} failed: {e}")
+                continue
+        
+        return []
     
     # ==================== REDDIT (FREE) ====================
     
@@ -406,26 +622,64 @@ What should I post about and when?"""
     async def comprehensive_free_research(
         self,
         topic: str,
-        category: str = "crypto"
+        category: str = "crypto",
+        country: str = "us"
     ) -> Dict:
         """
         Run comprehensive research using ONLY FREE sources.
         
         Sources:
+        - Twitter Trends (via TrendsTools - FREE!)
+        - Google Trends (via TrendsTools - FREE!)
         - Reddit (free public API)
         - RSS News Feeds (free)
         - CoinGecko (free, for crypto)
+        - YouTube Trends (via TrendsTools - FREE!)
         - Groq AI analysis (free tier)
         """
         results = {
             "topic": topic,
             "category": category,
+            "country": country,
             "researched_at": datetime.utcnow().isoformat(),
             "data_sources": [],
             "all_free": True
         }
         
-        # 1. Reddit trends
+        # 1. TWITTER TRENDS (FREE via TrendsTools!)
+        twitter_data = await self.get_twitter_trends_free(country)
+        results["twitter"] = {
+            "trends": [
+                {
+                    "topic": t.topic,
+                    "volume": t.volume,
+                    "velocity": t.velocity,
+                    "url": t.url
+                }
+                for t in twitter_data[:15]
+            ],
+            "is_real_data": len(twitter_data) > 0 and twitter_data[0].is_real_data,
+            "source": "TrendsTools API (FREE - no Twitter API needed!)"
+        }
+        results["data_sources"].append("twitter_trendstools")
+        
+        # 2. GOOGLE TRENDS (FREE via TrendsTools!)
+        google_data = await self.get_google_trends_via_trendstools(country)
+        results["google_trends"] = {
+            "trends": [
+                {
+                    "topic": t.topic,
+                    "traffic": t.volume,
+                    "url": t.url
+                }
+                for t in google_data[:15]
+            ],
+            "is_real_data": len(google_data) > 0 and google_data[0].is_real_data,
+            "source": "TrendsTools API (FREE)"
+        }
+        results["data_sources"].append("google_trendstools")
+        
+        # 3. Reddit trends
         reddit_data = await self.get_reddit_trends(category)
         results["reddit"] = {
             "posts": [
@@ -443,7 +697,7 @@ What should I post about and when?"""
         }
         results["data_sources"].append("reddit")
         
-        # 2. RSS News
+        # 4. RSS News
         news_data = await self.get_news_from_rss(category)
         results["news"] = {
             "articles": news_data[:10],
@@ -452,14 +706,24 @@ What should I post about and when?"""
         }
         results["data_sources"].append("rss_news")
         
-        # 3. Crypto trends (if crypto category)
+        # 5. Crypto trends (if crypto category)
         if category in ["crypto", "defi", "nft"]:
             crypto_data = await self.get_crypto_trends()
             results["crypto"] = crypto_data
             results["crypto"]["source"] = "CoinGecko API (FREE)"
             results["data_sources"].append("coingecko")
         
-        # 4. AI Analysis
+        # 6. YouTube Trends
+        youtube_data = await self.get_youtube_trends_free(country)
+        if youtube_data:
+            results["youtube"] = {
+                "videos": youtube_data[:10],
+                "is_real_data": True,
+                "source": "TrendsTools API (FREE)"
+            }
+            results["data_sources"].append("youtube")
+        
+        # 7. AI Analysis (combines all the real data)
         ai_analysis = await self.analyze_trends_with_ai(topic, reddit_data, news_data)
         results["ai_analysis"] = ai_analysis
         results["ai_analysis"]["source"] = "Groq AI (FREE tier)"
@@ -467,16 +731,20 @@ What should I post about and when?"""
         
         # Calculate data quality
         real_sources = sum([
+            results["twitter"]["is_real_data"],
+            results["google_trends"]["is_real_data"],
             results["reddit"]["is_real_data"],
             results["news"]["is_real_data"],
             results.get("crypto", {}).get("is_real_data", False),
+            results.get("youtube", {}).get("is_real_data", False),
             results["ai_analysis"].get("based_on_real_data", False)
         ])
         
         results["data_quality"] = {
             "real_data_sources": real_sources,
             "total_sources": len(results["data_sources"]),
-            "quality_score": f"{int(real_sources / len(results['data_sources']) * 100)}%"
+            "quality_score": f"{int(real_sources / max(len(results['data_sources']), 1) * 100)}%",
+            "cost": "$0.00 - All FREE sources!"
         }
         
         return results
