@@ -499,7 +499,7 @@ async def send_message(
     try:
         result = await chat_service.process_message(
             message=message.content,
-            user_id=str(current_user["id"]),
+            user_id=str(current_user.id),
             conversation_id=message.conversation_id,
             context=message.context
         )
@@ -519,7 +519,7 @@ async def stream_response(
     """
     async def generate():
         try:
-            user_id = str(current_user["id"])
+            user_id = str(current_user.id)
             conversation_id = message.conversation_id or str(uuid.uuid4())
             
             # Parse intent first
@@ -636,7 +636,7 @@ async def get_conversation_history(
             ORDER BY created_at ASC
         """, {
             "conversation_id": conversation_id,
-            "user_id": str(current_user["id"])
+            "user_id": str(current_user.id)
         })
         
         return {
@@ -671,7 +671,7 @@ async def list_conversations(
             ORDER BY conversation_id, created_at DESC
             LIMIT :limit
         """, {
-            "user_id": str(current_user["id"]),
+            "user_id": str(current_user.id),
             "limit": limit
         })
         
@@ -701,7 +701,7 @@ async def delete_conversation(
             WHERE conversation_id = :conversation_id AND user_id = :user_id
         """, {
             "conversation_id": conversation_id,
-            "user_id": str(current_user["id"])
+            "user_id": str(current_user.id)
         })
         return {"status": "deleted", "conversation_id": conversation_id}
     except Exception as e:
@@ -743,7 +743,7 @@ async def get_optimal_times(
     Get PERSONALIZED optimal posting times based on YOUR engagement data.
     Falls back to industry research if you don't have enough posts yet.
     """
-    user_id = str(current_user["id"])
+    user_id = str(current_user.id)
     
     try:
         # Get personalized times from user's actual data
@@ -803,7 +803,7 @@ async def get_smart_scheduling(
     - Current trending topics
     - Content-trend alignment
     """
-    user_id = str(current_user["id"])
+    user_id = str(current_user.id)
     platform_list = [p.strip() for p in platforms.split(",")]
     
     try:
@@ -843,7 +843,7 @@ async def run_deep_research(
     7. Content Improvement Suggestions
     8. Hashtag Recommendations
     """
-    user_id = str(current_user["id"])
+    user_id = str(current_user.id)
     
     try:
         # Run comprehensive research
