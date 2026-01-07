@@ -26,6 +26,7 @@ from optimal_times_service import optimal_times_service
 from trend_analyzer_service import trend_analyzer
 from deep_research_engine import deep_research_engine
 from real_time_research_service import real_time_research
+from free_research_service import free_research
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
 
@@ -1119,5 +1120,189 @@ async def check_api_status(
             }
         },
         "recommendation": "Add missing API keys to Railway environment variables for full real-time research capabilities."
+    }
+
+
+# ============= FREE Research Endpoints (No API Keys Needed!) =============
+
+@router.get("/free/reddit/{category}")
+async def get_free_reddit_trends(
+    category: str,  # crypto, ai, tech, defi, startup, nft
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    🆓 FREE - Get trending posts from Reddit.
+    
+    No API key required! Uses Reddit's public JSON endpoints.
+    
+    Categories: crypto, ai, tech, defi, startup, nft
+    """
+    try:
+        trends = await free_research.get_reddit_trends(category)
+        return {
+            "source": "reddit_public_api",
+            "category": category,
+            "cost": "FREE",
+            "is_real_data": trends[0].is_real_data if trends else False,
+            "posts": [
+                {
+                    "title": t.topic,
+                    "score": t.volume,
+                    "velocity": round(t.velocity, 2),
+                    "subreddit": t.related_topics[0] if t.related_topics else "",
+                    "url": t.url,
+                    "sentiment": t.sentiment
+                }
+                for t in trends
+            ],
+            "fetched_at": trends[0].fetched_at if trends else None
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/free/news/{category}")
+async def get_free_news(
+    category: str,  # crypto, ai, tech, startup
+    limit: int = 10,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    🆓 FREE - Get news from RSS feeds.
+    
+    No API key required! Works in production (unlike NewsAPI free tier).
+    
+    Categories: crypto, ai, tech, startup
+    """
+    try:
+        news = await free_research.get_news_from_rss(category, limit)
+        return {
+            "source": "rss_feeds",
+            "category": category,
+            "cost": "FREE",
+            "is_real_data": len(news) > 0,
+            "articles": news,
+            "note": "RSS feeds - works in production (unlike NewsAPI free tier)"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/free/crypto")
+async def get_free_crypto_trends(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    🆓 FREE - Get crypto market trends from CoinGecko.
+    
+    No API key required!
+    Returns: trending coins, market cap, BTC dominance, etc.
+    """
+    try:
+        data = await free_research.get_crypto_trends()
+        return {
+            "source": "coingecko_api",
+            "cost": "FREE",
+            **data
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/free/google-trends/{keyword}")
+async def get_free_google_trends(
+    keyword: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    🆓 FREE - Get Google Trends data using PyTrends.
+    
+    No API key required! Uses Google's public interface.
+    May be rate limited if overused.
+    """
+    try:
+        data = await free_research.get_google_trends_free(keyword)
+        return {
+            "source": "pytrends_library",
+            "cost": "FREE",
+            **data,
+            "note": "Uses web scraping, may be rate limited"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/free/comprehensive")
+async def comprehensive_free_research_endpoint(
+    topic: str,
+    category: str = "crypto",
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    🆓 FREE COMPREHENSIVE RESEARCH
+    
+    Fetches from ALL free sources:
+    - Reddit (public API)
+    - RSS News Feeds
+    - CoinGecko (crypto data)
+    - Groq AI analysis (free tier)
+    
+    NO paid APIs required!
+    """
+    try:
+        result = await free_research.comprehensive_free_research(topic, category)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/free/status")
+async def check_free_api_status():
+    """
+    Check status of FREE data sources.
+    No authentication required for this endpoint.
+    """
+    import os
+    
+    return {
+        "free_sources": {
+            "reddit": {
+                "status": "✅ Always FREE",
+                "api_key_required": False,
+                "endpoint": "/chat/free/reddit/{category}",
+                "note": "Uses public JSON endpoints"
+            },
+            "rss_news": {
+                "status": "✅ Always FREE", 
+                "api_key_required": False,
+                "endpoint": "/chat/free/news/{category}",
+                "note": "RSS feeds work in production (unlike NewsAPI)"
+            },
+            "coingecko": {
+                "status": "✅ Always FREE",
+                "api_key_required": False,
+                "endpoint": "/chat/free/crypto",
+                "note": "Great for crypto market data"
+            },
+            "google_trends": {
+                "status": "✅ FREE (rate limited)",
+                "api_key_required": False,
+                "endpoint": "/chat/free/google-trends/{keyword}",
+                "note": "Uses PyTrends library, may be rate limited"
+            },
+            "groq_ai": {
+                "status": "✅ FREE tier" if os.getenv("GROQ_API_KEY") else "⚠️ Need GROQ_API_KEY",
+                "api_key_required": True,
+                "endpoint": "Used in comprehensive research",
+                "get_key_at": "https://console.groq.com/",
+                "note": "Generous free tier - 30 RPM"
+            }
+        },
+        "paid_sources_not_used": {
+            "twitter_api": "$100+/month - NOT required",
+            "newsapi": "$449/month for production - NOT required (we use RSS)",
+            "serpapi": "$75+/month - NOT required (we use PyTrends)"
+        },
+        "recommendation": "Only GROQ_API_KEY is needed for full functionality!"
     }
 
