@@ -25,6 +25,7 @@ from auth_routes import get_current_user
 from optimal_times_service import optimal_times_service
 from trend_analyzer_service import trend_analyzer
 from deep_research_engine import deep_research_engine
+from real_time_research_service import real_time_research
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
 
@@ -899,4 +900,224 @@ async def run_deep_research(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============= Raw Real-Time Data Endpoints =============
+
+@router.get("/realtime/twitter-trends")
+async def get_live_twitter_trends(
+    woeid: int = 1,  # 1=Worldwide, 23424977=US
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get LIVE Twitter trending topics.
+    
+    WOEID locations:
+    - 1 = Worldwide
+    - 23424977 = United States
+    - 23424975 = United Kingdom
+    - 23424848 = India
+    - 23424768 = Brazil
+    """
+    try:
+        trends = await real_time_research.get_twitter_trends(woeid)
+        return {
+            "source": "twitter",
+            "is_real_data": trends[0].is_real_data if trends else False,
+            "trends": [
+                {
+                    "name": t.name,
+                    "volume": t.volume,
+                    "velocity": t.velocity,
+                    "hashtags": t.hashtags,
+                    "url": t.url
+                }
+                for t in trends
+            ],
+            "fetched_at": trends[0].fetched_at if trends else None,
+            "api_status": "🟢 LIVE" if (trends and trends[0].is_real_data) else "🟡 Fallback"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/realtime/reddit/{category}")
+async def get_live_reddit_trends(
+    category: str,  # crypto, ai, tech, defi, startup
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get LIVE hot posts from relevant subreddits.
+    
+    Categories: crypto, ai, tech, defi, startup
+    """
+    try:
+        trends = await real_time_research.get_reddit_hot(category)
+        return {
+            "source": "reddit",
+            "category": category,
+            "is_real_data": trends[0].is_real_data if trends else False,
+            "posts": [
+                {
+                    "title": t.name,
+                    "score": t.volume,
+                    "velocity": t.velocity,
+                    "subreddit": t.related_topics[0] if t.related_topics else "",
+                    "url": t.url,
+                    "sentiment": t.sentiment
+                }
+                for t in trends
+            ],
+            "fetched_at": trends[0].fetched_at if trends else None,
+            "api_status": "🟢 LIVE" if (trends and trends[0].is_real_data) else "🟡 Fallback"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/realtime/news/{topic}")
+async def get_live_news(
+    topic: str,
+    hours: int = 24,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get LIVE news articles about a topic from the last N hours.
+    """
+    try:
+        news = await real_time_research.get_news_for_topic(topic, hours)
+        return {
+            "source": "newsapi",
+            "topic": topic,
+            "is_real_data": news[0].get("is_real_data", False) if news else False,
+            "articles": news,
+            "api_status": "🟢 LIVE" if (news and news[0].get("is_real_data")) else "🔴 No API Key"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/realtime/google-trends/{keyword}")
+async def get_google_trends_data(
+    keyword: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get Google Trends data for a keyword.
+    """
+    try:
+        data = await real_time_research.get_google_trends(keyword)
+        return {
+            "source": "google_trends",
+            "keyword": keyword,
+            **data,
+            "api_status": "🟢 LIVE" if data.get("is_real_data") else "🔴 No API Key"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/realtime/competitor/{username}")
+async def analyze_competitor(
+    username: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Analyze a competitor's posting patterns (Twitter).
+    
+    Returns:
+    - Recent posting times
+    - Posting frequency
+    - Average engagement
+    - Best performing content
+    """
+    try:
+        insight = await real_time_research.get_competitor_posting_times(username)
+        return {
+            "source": "twitter",
+            "handle": f"@{insight.handle}",
+            "is_real_data": insight.is_real_data,
+            "posting_frequency": insight.posting_frequency,
+            "recent_post_times": insight.recent_post_times,
+            "avg_engagement": insight.avg_engagement,
+            "best_performing_content": insight.best_performing_content,
+            "api_status": "🟢 LIVE" if insight.is_real_data else "🔴 No API Key"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/realtime/comprehensive")
+async def comprehensive_realtime_research(
+    topic: str,
+    category: str = "crypto",
+    competitors: str = "",  # Comma-separated usernames
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    🔬 COMPREHENSIVE REAL-TIME RESEARCH
+    
+    Fetches data from ALL sources:
+    - Twitter trending topics
+    - Twitter hashtag volume
+    - Reddit hot posts
+    - News articles
+    - Google Trends
+    - Competitor analysis
+    
+    Returns data quality score showing what % is real vs fallback.
+    """
+    try:
+        competitor_list = [c.strip() for c in competitors.split(",") if c.strip()]
+        
+        result = await real_time_research.comprehensive_research(
+            topic=topic,
+            category=category,
+            competitors=competitor_list or None
+        )
+        
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/realtime/status")
+async def check_api_status(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Check which real-time APIs are configured and working.
+    """
+    import os
+    
+    return {
+        "apis": {
+            "twitter": {
+                "configured": bool(os.getenv("TWITTER_BEARER_TOKEN")),
+                "key_name": "TWITTER_BEARER_TOKEN",
+                "get_key_at": "https://developer.twitter.com/en/portal/dashboard"
+            },
+            "reddit": {
+                "configured": bool(os.getenv("REDDIT_CLIENT_ID") and os.getenv("REDDIT_CLIENT_SECRET")),
+                "key_names": ["REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET"],
+                "get_key_at": "https://www.reddit.com/prefs/apps"
+            },
+            "news_api": {
+                "configured": bool(os.getenv("NEWS_API_KEY")),
+                "key_name": "NEWS_API_KEY",
+                "get_key_at": "https://newsapi.org/register"
+            },
+            "google_trends": {
+                "configured": bool(os.getenv("SERP_API_KEY")),
+                "key_name": "SERP_API_KEY",
+                "get_key_at": "https://serpapi.com/"
+            },
+            "groq_ai": {
+                "configured": bool(os.getenv("GROQ_API_KEY")),
+                "key_name": "GROQ_API_KEY",
+                "get_key_at": "https://console.groq.com/"
+            }
+        },
+        "recommendation": "Add missing API keys to Railway environment variables for full real-time research capabilities."
+    }
 

@@ -14,11 +14,12 @@ This is the REAL DEAL - comprehensive research before scheduling:
    - When are they most active?
    - Device usage patterns
 
-3. REAL-TIME TREND RESEARCH
-   - Current trending topics
-   - Trending hashtags
-   - News/events affecting the topic
-   - Competitor activity
+3. REAL-TIME TREND RESEARCH (ACTUAL API DATA!)
+   - Twitter API for trending topics
+   - Reddit API for hot discussions
+   - News API for breaking news
+   - Google Trends for search interest
+   - Competitor account analysis
 
 4. TIMING OPTIMIZATION
    - Cross-platform best times
@@ -42,6 +43,9 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 from enum import Enum
 from collections import defaultdict
+
+# Import the REAL data service
+from real_time_research_service import real_time_research, TrendData as RealTrendData
 
 
 class ContentCategory(Enum):
@@ -488,17 +492,104 @@ class DeepResearchEngine:
         category: str,
         keywords: List[str]
     ) -> List[TrendingData]:
-        """Research current trends related to the content"""
+        """
+        Research current trends related to the content.
+        NOW USING REAL API DATA!
+        """
         trends = []
+        self.data_quality_report = {
+            "twitter": False,
+            "reddit": False,
+            "news": False,
+            "google_trends": False
+        }
         
-        # Try to get real trends
-        if self.groq_api_key:
+        # 1. Get REAL Twitter trends
+        try:
+            twitter_trends = await real_time_research.get_twitter_trends()
+            for t in twitter_trends[:5]:
+                trends.append(TrendingData(
+                    topic=t.name,
+                    volume=t.volume or 10000,
+                    velocity=t.velocity,
+                    sentiment=t.sentiment,
+                    related_hashtags=t.hashtags,
+                    top_tweets=[],
+                    news_events=[],
+                    is_peak=t.velocity < 1.2
+                ))
+                if t.is_real_data:
+                    self.data_quality_report["twitter"] = True
+        except Exception as e:
+            print(f"⚠️ Twitter trends failed: {e}")
+        
+        # 2. Get REAL Reddit hot posts
+        try:
+            reddit_trends = await real_time_research.get_reddit_hot(category)
+            for t in reddit_trends[:5]:
+                # Only add if relevant to keywords
+                if any(kw.lower() in t.name.lower() for kw in keywords) or not keywords:
+                    trends.append(TrendingData(
+                        topic=t.name,
+                        volume=t.volume or 1000,
+                        velocity=t.velocity,
+                        sentiment=t.sentiment,
+                        related_hashtags=[],
+                        top_tweets=[],
+                        news_events=t.related_topics,
+                        is_peak=t.velocity < 1.2
+                    ))
+                    if t.is_real_data:
+                        self.data_quality_report["reddit"] = True
+        except Exception as e:
+            print(f"⚠️ Reddit trends failed: {e}")
+        
+        # 3. Get news for the topic
+        if keywords:
+            try:
+                news = await real_time_research.get_news_for_topic(keywords[0])
+                if news:
+                    self.data_quality_report["news"] = news[0].get("is_real_data", False)
+                    # Add news as trend context
+                    for article in news[:3]:
+                        trends.append(TrendingData(
+                            topic=f"📰 {article.get('title', '')[:80]}",
+                            volume=5000,
+                            velocity=1.5,  # News is always timely
+                            sentiment="neutral",
+                            related_hashtags=[],
+                            top_tweets=[],
+                            news_events=[article.get("source", "")],
+                            is_peak=False
+                        ))
+            except Exception as e:
+                print(f"⚠️ News API failed: {e}")
+        
+        # 4. Get Google Trends data
+        if keywords:
+            try:
+                google_data = await real_time_research.get_google_trends(keywords[0])
+                if google_data.get("is_real_data"):
+                    self.data_quality_report["google_trends"] = True
+                    # Add related queries as trends
+                    for query in google_data.get("related_queries", [])[:3]:
+                        trends.append(TrendingData(
+                            topic=f"🔍 Rising search: {query.get('query', '')}",
+                            volume=3000,
+                            velocity=1.8,
+                            sentiment="neutral",
+                            related_hashtags=[],
+                            top_tweets=[],
+                            news_events=["Google Trends"],
+                            is_peak=False
+                        ))
+            except Exception as e:
+                print(f"⚠️ Google Trends failed: {e}")
+        
+        # Fallback to AI-generated trends if no real data
+        if not trends:
             ai_trends = await self._get_ai_trends(category, keywords)
             trends.extend(ai_trends)
-        
-        # Add category-specific evergreen trends
-        category_trends = self._get_category_trends(category)
-        trends.extend(category_trends)
         
         return trends[:10]
     
@@ -577,28 +668,92 @@ Return JSON array:
         return category_trends.get(category, [])
     
     async def _analyze_competitors(self, category: str, platform: str) -> Dict:
-        """Analyze when top accounts in this category post"""
-        # This would ideally scrape/analyze real data
-        # For now, return category-specific patterns
+        """
+        Analyze when top accounts in this category post.
+        NOW USING REAL TWITTER API DATA!
+        """
+        # Define top accounts per category to analyze
+        category_accounts = {
+            "crypto": ["solaboratory", "solana", "phantom", "MagicEden"],
+            "ai": ["OpenAI", "AnthropicAI", "xaboratory", "caboratory"],
+            "tech": ["levelsio", "t3dotgg", "naval"],
+            "defi": ["JupiterExchange", "RaydiumProtocol", "MarinadeFinance"],
+            "startup": ["ycombinator", "a16z", "sequoia"],
+        }
         
+        accounts = category_accounts.get(category, ["elonmusk"])[:2]  # Limit API calls
+        
+        # Try to get REAL data
+        real_insights = []
+        has_real_data = False
+        
+        for account in accounts:
+            try:
+                insight = await real_time_research.get_competitor_posting_times(account)
+                if insight.is_real_data:
+                    has_real_data = True
+                    real_insights.append({
+                        "handle": f"@{insight.handle}",
+                        "posting_frequency": insight.posting_frequency,
+                        "recent_times": insight.recent_post_times[:5],
+                        "avg_engagement": insight.avg_engagement,
+                        "top_content": insight.best_performing_content[:2]
+                    })
+            except Exception as e:
+                print(f"⚠️ Competitor analysis failed for @{account}: {e}")
+        
+        # If we got real data, analyze posting patterns
+        if has_real_data and real_insights:
+            # Extract common posting hours from real data
+            all_times = []
+            for insight in real_insights:
+                for time_str in insight.get("recent_times", []):
+                    try:
+                        dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
+                        all_times.append(dt.strftime("%H:00 UTC"))
+                    except:
+                        pass
+            
+            # Find most common hours
+            from collections import Counter
+            hour_counts = Counter(all_times)
+            common_times = [time for time, count in hour_counts.most_common(3)]
+            
+            return {
+                "top_accounts": [i["handle"] for i in real_insights],
+                "common_posting_times": common_times or ["12:00 UTC", "18:00 UTC"],
+                "avg_posts_per_day": sum(
+                    float(i["posting_frequency"].split("x")[0]) 
+                    for i in real_insights 
+                    if "x" in i.get("posting_frequency", "")
+                ) / max(len(real_insights), 1),
+                "high_engagement_patterns": "Based on real data analysis",
+                "detailed_insights": real_insights,
+                "is_real_data": True
+            }
+        
+        # Fallback to static patterns
         competitor_patterns = {
             "crypto": {
                 "top_accounts": ["@solana", "@ethereum", "@VitalikButerin"],
                 "common_posting_times": ["9:00 UTC", "14:00 UTC", "21:00 UTC"],
                 "avg_posts_per_day": 3,
-                "high_engagement_patterns": "Alpha drops, market commentary, memes during pumps"
+                "high_engagement_patterns": "Alpha drops, market commentary, memes during pumps",
+                "is_real_data": False
             },
             "ai": {
                 "top_accounts": ["@OpenAI", "@AnthropicAI", "@ylecun"],
                 "common_posting_times": ["15:00 UTC", "18:00 UTC"],
                 "avg_posts_per_day": 2,
-                "high_engagement_patterns": "Research releases, demos, hot takes"
+                "high_engagement_patterns": "Research releases, demos, hot takes",
+                "is_real_data": False
             },
             "tech": {
                 "top_accounts": ["@levelsio", "@dhaborowski", "@naval"],
                 "common_posting_times": ["13:00 UTC", "17:00 UTC"],
                 "avg_posts_per_day": 2,
-                "high_engagement_patterns": "Build in public, lessons, tools"
+                "high_engagement_patterns": "Build in public, lessons, tools",
+                "is_real_data": False
             },
         }
         
@@ -606,7 +761,8 @@ Return JSON array:
             "top_accounts": [],
             "common_posting_times": ["12:00 UTC", "18:00 UTC"],
             "avg_posts_per_day": 2,
-            "high_engagement_patterns": "Consistent posting with value"
+            "high_engagement_patterns": "Consistent posting with value",
+            "is_real_data": False
         })
     
     async def _calculate_optimal_timing(
@@ -837,6 +993,33 @@ Return JSON array:
     def format_research_for_display(self, result: DeepResearchResult) -> str:
         """Format the research result as readable markdown"""
         lines = ["## 🔬 Deep Research Results\n"]
+        
+        # Data Quality Banner
+        data_quality = getattr(self, 'data_quality_report', {})
+        real_sources = sum(1 for v in data_quality.values() if v)
+        total_sources = len(data_quality) if data_quality else 4
+        
+        if real_sources > 0:
+            lines.append(f"### 📡 Data Sources: {real_sources}/{total_sources} LIVE")
+            source_status = []
+            if data_quality.get("twitter"):
+                source_status.append("✅ Twitter")
+            else:
+                source_status.append("⚠️ Twitter (fallback)")
+            if data_quality.get("reddit"):
+                source_status.append("✅ Reddit")
+            else:
+                source_status.append("⚠️ Reddit (fallback)")
+            if data_quality.get("news"):
+                source_status.append("✅ News")
+            else:
+                source_status.append("⚠️ News (unavailable)")
+            if data_quality.get("google_trends"):
+                source_status.append("✅ Google Trends")
+            else:
+                source_status.append("⚠️ Google Trends (unavailable)")
+            lines.append(" | ".join(source_status))
+            lines.append("")
         
         # Content Analysis
         lines.append("### 📊 Content Analysis")
