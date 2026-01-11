@@ -3,8 +3,8 @@ import { clusterApiUrl } from '@solana/web3.js';
 import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
-  BackpackWalletAdapter,
-  CoinbaseWalletAdapter,
+  TorusWalletAdapter,
+  LedgerWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
 
 // Network configuration - use mainnet for production
@@ -56,12 +56,14 @@ export const TIER_FEATURES = {
 };
 
 // Initialize wallet adapters
+// Note: Only include adapters that are available in @solana/wallet-adapter-wallets
+// Phantom and Solflare are the most popular Solana wallets
 export const getWalletAdapters = () => {
   return [
     new PhantomWalletAdapter(),
-    new BackpackWalletAdapter(),
     new SolflareWalletAdapter(),
-    new CoinbaseWalletAdapter(),
+    new TorusWalletAdapter(),
+    new LedgerWalletAdapter(),
   ];
 };
 
