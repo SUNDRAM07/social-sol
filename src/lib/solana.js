@@ -1,9 +1,5 @@
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { clusterApiUrl } from '@solana/web3.js';
-import {
-  PhantomWalletAdapter,
-  SolflareWalletAdapter,
-} from '@solana/wallet-adapter-wallets';
 
 // Network configuration - use mainnet for production
 export const SOLANA_NETWORK = WalletAdapterNetwork.Mainnet;
@@ -54,13 +50,11 @@ export const TIER_FEATURES = {
 };
 
 // Initialize wallet adapters
-// Phantom and Solflare cover 95%+ of Solana users
-// Avoiding Ledger/Torus as they require native compilation (node-gyp/Python)
+// Return empty array - modern wallets (Phantom, Solflare, Backpack, etc.)
+// implement "Wallet Standard" and are auto-detected by the adapter
+// This avoids native compilation issues with USB/node-gyp
 export const getWalletAdapters = () => {
-  return [
-    new PhantomWalletAdapter(),
-    new SolflareWalletAdapter(),
-  ];
+  return [];
 };
 
 // Helper to determine tier from balance
