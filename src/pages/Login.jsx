@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useWallet } from '@solana/wallet-adapter-react';
 import Card from '../components/ui/Card.jsx';
 import Button from '../components/ui/Button.jsx';
 import { useAuthStore } from '../store/authStore.js';
-import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Mail, Lock, Eye, EyeOff, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
+import { WalletConnect } from '../components/wallet/WalletConnect.jsx';
 
 function Login() {
   const navigate = useNavigate();
-  const { login: loginGoogle, isAuthenticated, isLoading, error, clearError, setUser, setToken, setLoading, setError } = useAuthStore();
+  const { login: loginGoogle, loginWithWallet, isAuthenticated, isLoading, error, clearError, setUser, setToken, setLoading, setError } = useAuthStore();
+  const { connected, publicKey, signMessage } = useWallet();
+  const [walletLoading, setWalletLoading] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -47,6 +51,46 @@ function Login() {
   useEffect(() => {
     clearError();
   }, [clearError]);
+
+  // Handle wallet connection - auto-login when wallet connects
+  useEffect(() => {
+    const handleWalletLogin = async () => {
+      if (connected && publicKey && signMessage && !isAuthenticated && !walletLoading) {
+        setWalletLoading(true);
+        try {
+          const walletAddress = publicKey.toBase58();
+          console.log('🔐 Wallet connected, attempting login:', walletAddress);
+          
+          const result = await loginWithWallet(walletAddress, signMessage);
+          
+          if (result.success) {
+            toast.success('Wallet connected successfully!');
+            // Check platform connections and redirect
+            try {
+              const { checkPlatformConnections } = await import('../lib/apiClient.js');
+              const connections = await checkPlatformConnections();
+              if (connections && !connections.has_connections) {
+                navigate('/settings');
+              } else {
+                navigate('/dashboard');
+              }
+            } catch (error) {
+              navigate('/dashboard');
+            }
+          } else {
+            toast.error(result.error || 'Wallet authentication failed');
+          }
+        } catch (error) {
+          console.error('Wallet login error:', error);
+          toast.error('Failed to authenticate with wallet');
+        } finally {
+          setWalletLoading(false);
+        }
+      }
+    };
+
+    handleWalletLogin();
+  }, [connected, publicKey, signMessage, isAuthenticated, walletLoading, loginWithWallet, navigate]);
 
   // Handle Google callback
   const handleGoogleCallback = async (response) => {
@@ -316,6 +360,16 @@ function Login() {
                 <div className="w-full flex items-center justify-center gap-3 border-2 border-[var(--primary)] rounded-lg py-3">
                   <Loader2 className="w-5 h-5 animate-spin" />
                   <span>Signing in...</span>
+                </div>
+              )}
+
+              {/* Solana Wallet Login */}
+              <WalletConnect className="w-full" />
+              
+              {walletLoading && (
+                <div className="w-full flex items-center justify-center gap-3 border-2 border-purple-500 rounded-lg py-3 bg-purple-500/10">
+                  <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
+                  <span className="text-purple-400">Authenticating wallet...</span>
                 </div>
               )}
 

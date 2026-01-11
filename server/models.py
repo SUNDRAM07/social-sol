@@ -17,10 +17,11 @@ class User(Base):
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     google_id = Column(String(255), unique=True, nullable=True)  # Nullable for email/password users
-    email = Column(String(255), unique=True, nullable=False)
+    email = Column(String(255), unique=True, nullable=True)  # Nullable for wallet-only users
     name = Column(String(255), nullable=False)
     picture_url = Column(String(500))
     password_hash = Column(String(255), nullable=True)  # For email/password authentication
+    wallet_address = Column(String(44), unique=True, nullable=True)  # Solana wallet address (32-44 chars base58)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     is_active = Column(Boolean, default=True)
@@ -225,9 +226,10 @@ from datetime import datetime
 class UserResponse(BaseModel):
     id: str
     google_id: Optional[str] = None  # Nullable for email/password users
-    email: str
+    email: Optional[str] = None  # Nullable for wallet-only users
     name: str
     picture_url: Optional[str] = None
+    wallet_address: Optional[str] = None  # Solana wallet address
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -241,9 +243,10 @@ class UserResponse(BaseModel):
         return cls(
             id=str(obj.id),
             google_id=obj.google_id,  # Can be None for email/password users
-            email=obj.email,
+            email=obj.email,  # Can be None for wallet-only users
             name=obj.name,
             picture_url=obj.picture_url,
+            wallet_address=getattr(obj, 'wallet_address', None),
             is_active=obj.is_active,
             created_at=obj.created_at,
             updated_at=obj.updated_at

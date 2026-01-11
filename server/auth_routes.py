@@ -1,15 +1,20 @@
 """
-Authentication routes for Google OAuth integration
+Authentication routes for Google OAuth and Solana Wallet integration
 """
 
 from fastapi import APIRouter, HTTPException, status, Depends, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import Optional
+import secrets
+import time
 from auth_service import auth_service
 from models import UserResponse
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+
+# In-memory nonce storage (use Redis in production)
+wallet_nonces = {}
 
 
 # Explicit OPTIONS handlers for CORS preflight
@@ -67,6 +72,21 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: str
     password: str
+
+
+class WalletNonceRequest(BaseModel):
+    wallet_address: str
+
+
+class WalletVerifyRequest(BaseModel):
+    wallet_address: str
+    signature: str
+    nonce: str
+
+
+class WalletNonceResponse(BaseModel):
+    message: str
+    nonce: str
 
 
 class AuthResponse(BaseModel):
@@ -209,6 +229,278 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials"
+        )
+
+
+# ============================================
+# SOLANA WALLET AUTHENTICATION
+# ============================================
+
+@router.options("/wallet/nonce")
+async def options_wallet_nonce():
+    """Handle CORS preflight for wallet nonce endpoint"""
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
+
+
+@router.options("/wallet/verify")
+async def options_wallet_verify():
+    """Handle CORS preflight for wallet verify endpoint"""
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
+
+
+@router.post("/wallet/nonce", response_model=WalletNonceResponse)
+async def get_wallet_nonce(request: WalletNonceRequest):
+    """
+    Generate a nonce/message for wallet signature verification.
+    The user signs this message to prove wallet ownership.
+    """
+    try:
+        wallet_address = request.wallet_address
+        
+        # Validate wallet address format (Solana addresses are 32-44 characters base58)
+        if not wallet_address or len(wallet_address) < 32 or len(wallet_address) > 44:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid wallet address format"
+            )
+        
+        # Generate a unique nonce
+        nonce = secrets.token_hex(16)
+        timestamp = int(time.time())
+        
+        # Create the message to sign
+        message = f"Sign this message to authenticate with SocialAnywhere.AI\n\nWallet: {wallet_address}\nNonce: {nonce}\nTimestamp: {timestamp}"
+        
+        # Store nonce temporarily (expires after 5 minutes)
+        wallet_nonces[wallet_address] = {
+            "nonce": nonce,
+            "timestamp": timestamp,
+            "message": message,
+            "expires": timestamp + 300  # 5 minutes
+        }
+        
+        print(f"🔐 Generated nonce for wallet: {wallet_address[:8]}...{wallet_address[-4:]}")
+        
+        return WalletNonceResponse(message=message, nonce=nonce)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error generating wallet nonce: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate authentication message"
+        )
+
+
+@router.post("/wallet/verify", response_model=AuthResponse)
+async def verify_wallet_signature(request: WalletVerifyRequest):
+    """
+    Verify the wallet signature and authenticate/register the user.
+    """
+    try:
+        wallet_address = request.wallet_address
+        signature = request.signature
+        nonce = request.nonce
+        
+        # Check if nonce exists and is valid
+        stored = wallet_nonces.get(wallet_address)
+        if not stored:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No authentication request found. Please request a new nonce."
+            )
+        
+        # Check if nonce matches
+        if stored["nonce"] != nonce:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid nonce"
+            )
+        
+        # Check if nonce expired
+        if time.time() > stored["expires"]:
+            del wallet_nonces[wallet_address]
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Authentication request expired. Please request a new nonce."
+            )
+        
+        # Verify signature using nacl
+        try:
+            import base58
+            from nacl.signing import VerifyKey
+            from nacl.exceptions import BadSignatureError
+            
+            # Decode the public key (wallet address) and signature
+            public_key_bytes = base58.b58decode(wallet_address)
+            signature_bytes = base58.b58decode(signature)
+            message_bytes = stored["message"].encode('utf-8')
+            
+            # Verify the signature
+            verify_key = VerifyKey(public_key_bytes)
+            verify_key.verify(message_bytes, signature_bytes)
+            
+            print(f"✅ Wallet signature verified for: {wallet_address[:8]}...{wallet_address[-4:]}")
+            
+        except BadSignatureError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid wallet signature"
+            )
+        except Exception as e:
+            print(f"❌ Signature verification error: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Signature verification failed"
+            )
+        
+        # Clean up used nonce
+        del wallet_nonces[wallet_address]
+        
+        # Get or create user by wallet address
+        user = await auth_service.get_or_create_wallet_user(wallet_address)
+        
+        # Generate JWT token
+        access_token = auth_service.create_access_token(user.id)
+        
+        print(f"✅ Wallet authentication successful: {wallet_address[:8]}...{wallet_address[-4:]}")
+        
+        return AuthResponse(
+            access_token=access_token,
+            user=UserResponse.from_orm(user)
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Wallet verification failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Wallet verification failed: {str(e)}"
+        )
+
+
+@router.post("/wallet/link/nonce", response_model=WalletNonceResponse)
+async def get_wallet_link_nonce(
+    request: WalletNonceRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Generate a nonce for linking a wallet to an existing account.
+    Requires authentication.
+    """
+    try:
+        # Verify user is authenticated
+        user = await auth_service.get_current_user(credentials.credentials)
+        wallet_address = request.wallet_address
+        
+        # Generate nonce for linking
+        nonce = secrets.token_hex(16)
+        timestamp = int(time.time())
+        
+        message = f"Link this wallet to your SocialAnywhere.AI account\n\nWallet: {wallet_address}\nUser: {user.email}\nNonce: {nonce}\nTimestamp: {timestamp}"
+        
+        # Store with user_id for linking
+        wallet_nonces[f"link_{wallet_address}"] = {
+            "nonce": nonce,
+            "timestamp": timestamp,
+            "message": message,
+            "user_id": str(user.id),
+            "expires": timestamp + 300
+        }
+        
+        return WalletNonceResponse(message=message, nonce=nonce)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate link message"
+        )
+
+
+@router.post("/wallet/link", response_model=AuthResponse)
+async def link_wallet_to_account(
+    request: WalletVerifyRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Link a wallet to an existing authenticated account.
+    """
+    try:
+        # Verify user is authenticated
+        user = await auth_service.get_current_user(credentials.credentials)
+        wallet_address = request.wallet_address
+        
+        # Check stored nonce
+        stored = wallet_nonces.get(f"link_{wallet_address}")
+        if not stored or stored["nonce"] != request.nonce:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired link request"
+            )
+        
+        if time.time() > stored["expires"]:
+            del wallet_nonces[f"link_{wallet_address}"]
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Link request expired"
+            )
+        
+        # Verify signature
+        try:
+            import base58
+            from nacl.signing import VerifyKey
+            
+            public_key_bytes = base58.b58decode(wallet_address)
+            signature_bytes = base58.b58decode(request.signature)
+            message_bytes = stored["message"].encode('utf-8')
+            
+            verify_key = VerifyKey(public_key_bytes)
+            verify_key.verify(message_bytes, signature_bytes)
+            
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid wallet signature"
+            )
+        
+        # Clean up nonce
+        del wallet_nonces[f"link_{wallet_address}"]
+        
+        # Link wallet to user
+        updated_user = await auth_service.link_wallet_to_user(str(user.id), wallet_address)
+        
+        # Generate new token with updated info
+        access_token = auth_service.create_access_token(updated_user.id)
+        
+        return AuthResponse(
+            access_token=access_token,
+            user=UserResponse.from_orm(updated_user)
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to link wallet: {str(e)}"
         )
 
 

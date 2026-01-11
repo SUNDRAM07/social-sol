@@ -5,14 +5,17 @@ import { Toaster } from "sonner";
 import "./index.css";
 import App from "./App.jsx";
 import { ThemeProvider } from "./lib/theme.jsx";
+import { WalletProvider } from "./lib/WalletProvider.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <ThemeProvider>
-      <BrowserRouter>
-        <App />
-        <Toaster position="top-right" richColors />
-      </BrowserRouter>
+      <WalletProvider>
+        <BrowserRouter>
+          <App />
+          <Toaster position="top-right" richColors />
+        </BrowserRouter>
+      </WalletProvider>
     </ThemeProvider>
   </StrictMode>
 );

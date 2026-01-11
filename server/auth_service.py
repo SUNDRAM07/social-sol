@@ -576,6 +576,156 @@ class AuthService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to delete user account: {str(e)}"
             )
+    
+    # ============================================
+    # SOLANA WALLET AUTHENTICATION METHODS
+    # ============================================
+    
+    async def get_or_create_wallet_user(self, wallet_address: str) -> User:
+        """Get existing user by wallet address or create a new user"""
+        try:
+            # Check if user exists by wallet address
+            query = "SELECT * FROM users WHERE wallet_address = :wallet_address AND is_active = true"
+            existing_user = self._row_to_dict(await db_manager.fetch_one(query, {"wallet_address": wallet_address}))
+            
+            if existing_user:
+                print(f"✅ Found existing wallet user: {wallet_address[:8]}...{wallet_address[-4:]}")
+                return User(
+                    id=existing_user["id"],
+                    google_id=existing_user.get("google_id"),
+                    email=existing_user.get("email"),
+                    name=existing_user.get("name"),
+                    picture_url=existing_user.get("picture_url"),
+                    wallet_address=existing_user.get("wallet_address"),
+                    is_active=existing_user["is_active"],
+                    created_at=existing_user["created_at"],
+                    updated_at=existing_user["updated_at"]
+                )
+            
+            # Create new user with wallet
+            user_id = str(uuid.uuid4())
+            # Generate a display name from wallet address
+            display_name = f"Wallet {wallet_address[:4]}...{wallet_address[-4:]}"
+            
+            insert_query = """
+                INSERT INTO users (id, name, wallet_address, is_active)
+                VALUES (:id, :name, :wallet_address, :is_active)
+                RETURNING id, google_id, email, name, picture_url, wallet_address, is_active, created_at, updated_at
+            """
+            
+            new_user = await db_manager.fetch_one(insert_query, {
+                "id": user_id,
+                "name": display_name,
+                "wallet_address": wallet_address,
+                "is_active": True
+            })
+            
+            if not new_user:
+                raise Exception("Failed to create wallet user")
+            
+            new_user = self._row_to_dict(new_user)
+            print(f"✅ Created new wallet user: {wallet_address[:8]}...{wallet_address[-4:]}")
+            
+            return User(
+                id=new_user["id"],
+                google_id=new_user.get("google_id"),
+                email=new_user.get("email"),
+                name=new_user["name"],
+                picture_url=new_user.get("picture_url"),
+                wallet_address=new_user.get("wallet_address"),
+                is_active=new_user["is_active"],
+                created_at=new_user["created_at"],
+                updated_at=new_user["updated_at"]
+            )
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"❌ Error in get_or_create_wallet_user: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to authenticate wallet: {str(e)}"
+            )
+    
+    async def link_wallet_to_user(self, user_id: str, wallet_address: str) -> User:
+        """Link a wallet address to an existing user account"""
+        try:
+            # Check if wallet is already linked to another account
+            check_query = "SELECT id FROM users WHERE wallet_address = :wallet_address AND id != :user_id"
+            existing = await db_manager.fetch_one(check_query, {
+                "wallet_address": wallet_address,
+                "user_id": user_id
+            })
+            
+            if existing:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="This wallet is already linked to another account"
+                )
+            
+            # Update user with wallet address
+            update_query = """
+                UPDATE users 
+                SET wallet_address = :wallet_address, updated_at = NOW()
+                WHERE id = :user_id
+                RETURNING id, google_id, email, name, picture_url, wallet_address, is_active, created_at, updated_at
+            """
+            
+            updated_user = await db_manager.fetch_one(update_query, {
+                "wallet_address": wallet_address,
+                "user_id": user_id
+            })
+            
+            if not updated_user:
+                raise Exception("Failed to link wallet to user")
+            
+            updated_user = self._row_to_dict(updated_user)
+            print(f"✅ Linked wallet {wallet_address[:8]}...{wallet_address[-4:]} to user {user_id}")
+            
+            return User(
+                id=updated_user["id"],
+                google_id=updated_user.get("google_id"),
+                email=updated_user.get("email"),
+                name=updated_user["name"],
+                picture_url=updated_user.get("picture_url"),
+                wallet_address=updated_user.get("wallet_address"),
+                is_active=updated_user["is_active"],
+                created_at=updated_user["created_at"],
+                updated_at=updated_user["updated_at"]
+            )
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"❌ Error linking wallet: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to link wallet: {str(e)}"
+            )
+    
+    async def get_user_by_wallet(self, wallet_address: str) -> Optional[User]:
+        """Get user by wallet address"""
+        try:
+            query = "SELECT * FROM users WHERE wallet_address = :wallet_address AND is_active = true"
+            user_data = self._row_to_dict(await db_manager.fetch_one(query, {"wallet_address": wallet_address}))
+            
+            if user_data:
+                return User(
+                    id=user_data["id"],
+                    google_id=user_data.get("google_id"),
+                    email=user_data.get("email"),
+                    name=user_data["name"],
+                    picture_url=user_data.get("picture_url"),
+                    wallet_address=user_data.get("wallet_address"),
+                    is_active=user_data["is_active"],
+                    created_at=user_data["created_at"],
+                    updated_at=user_data["updated_at"]
+                )
+            return None
+            
+        except Exception as e:
+            print(f"Error getting user by wallet: {e}")
+            return None
 
 
 # Global auth service instance
