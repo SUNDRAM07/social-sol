@@ -11,7 +11,7 @@ from uuid import UUID
 from enum import Enum
 from dataclasses import dataclass
 
-from database import Database
+from database import db_manager
 from token_service import token_service, TokenBalance
 from subscription_tiers import (
     TierLevel, 
@@ -55,6 +55,21 @@ DAILY_LIMITS = {
 }
 
 
+def _row_to_dict(row):
+    """Convert database row to dictionary"""
+    if row is None:
+        return None
+    if isinstance(row, dict):
+        return row
+    mapping = getattr(row, "_mapping", None)
+    if mapping is not None:
+        return dict(mapping)
+    try:
+        return dict(row)
+    except:
+        return None
+
+
 @dataclass
 class SubscriptionStatus:
     """Current subscription status for a user"""
@@ -80,32 +95,30 @@ class SubscriptionService:
     """Service for managing subscriptions and tier access"""
     
     def __init__(self):
-        self.db = Database()
+        pass  # Uses db_manager for all database operations
     
     # =========================================================================
     # SUBSCRIPTION STATUS
     # =========================================================================
     
     async def get_subscription_status(self, user_id: UUID) -> SubscriptionStatus:
-        """
-        Get complete subscription status for a user
-        Includes tier, limits, usage, and renewal info
-        """
-        # Get subscription record
-        sub = await self.db.fetch_one(
-            """
-            SELECT * FROM subscriptions WHERE user_id = $1
-            """,
-            str(user_id)
-        )
-        
-        # Get credit balance
-        credits = await self.db.fetch_one(
-            """
-            SELECT * FROM credit_balances WHERE user_id = $1
-            """,
-            str(user_id)
-        )
+        """Get complete subscription status for a user"""
+        try:
+            # Get subscription record
+            sub = _row_to_dict(await db_manager.fetch_one(
+                "SELECT * FROM subscriptions WHERE user_id = :user_id",
+                {"user_id": str(user_id)}
+            ))
+            
+            # Get credit balance
+            credits = _row_to_dict(await db_manager.fetch_one(
+                "SELECT * FROM credit_balances WHERE user_id = :user_id",
+                {"user_id": str(user_id)}
+            ))
+        except Exception as e:
+            logger.error(f"Error fetching subscription: {e}")
+            sub = None
+            credits = None
         
         # Default values if no subscription exists
         if not sub:
@@ -128,24 +141,26 @@ class SubscriptionService:
                 grace_period=False
             )
         
-        tier = sub["tier"]
+        tier = sub.get("tier", "free")
         limits = DAILY_LIMITS.get(tier, DAILY_LIMITS["free"])
         
         # Calculate days until renewal
         days_until_renewal = None
-        if sub["renews_at"]:
-            delta = sub["renews_at"] - datetime.now()
+        renews_at = sub.get("renews_at")
+        if renews_at:
+            delta = renews_at - datetime.now()
             days_until_renewal = max(0, delta.days)
         
         # Check grace period
         grace_period = False
-        if sub.get("grace_period_ends"):
-            grace_period = datetime.now() < sub["grace_period_ends"]
+        grace_period_ends = sub.get("grace_period_ends")
+        if grace_period_ends:
+            grace_period = datetime.now() < grace_period_ends
         
         # Is subscription actually active?
         subscription_active = tier in ["premium", "agency"]
-        if subscription_active and sub["renews_at"]:
-            subscription_active = datetime.now() < sub["renews_at"] or grace_period
+        if subscription_active and renews_at:
+            subscription_active = datetime.now() < renews_at or grace_period
         
         return SubscriptionStatus(
             user_id=user_id,
@@ -153,13 +168,13 @@ class SubscriptionService:
             token_balance=sub.get("token_balance", 0),
             is_subscribed=tier in ["premium", "agency"],
             subscription_active=subscription_active,
-            renews_at=sub.get("renews_at"),
+            renews_at=renews_at,
             auto_renew=sub.get("auto_renew", False),
             posts_used_today=sub.get("posts_used_today", 0),
             posts_limit=limits["posts"],
             ai_generations_today=sub.get("ai_generations_today", 0),
             ai_generations_limit=limits["ai_generations"],
-            credits_balance=credits["credits_balance"] if credits else 0,
+            credits_balance=credits.get("credits_balance", 0) if credits else 0,
             tokens_burned_total=sub.get("tokens_burned_total", 0),
             can_auto_post=tier in ["premium", "agency"] and subscription_active,
             days_until_renewal=days_until_renewal,
@@ -168,113 +183,77 @@ class SubscriptionService:
     
     async def get_or_create_subscription(self, user_id: UUID) -> dict:
         """Get or create subscription record for user"""
-        sub = await self.db.fetch_one(
-            "SELECT * FROM subscriptions WHERE user_id = $1",
-            str(user_id)
-        )
-        
-        if not sub:
-            # Create default subscription
-            await self.db.execute(
-                """
-                INSERT INTO subscriptions (user_id, tier, posts_used_today, ai_generations_today)
-                VALUES ($1, 'free', 0, 0)
-                """,
-                str(user_id)
-            )
-            sub = await self.db.fetch_one(
-                "SELECT * FROM subscriptions WHERE user_id = $1",
-                str(user_id)
-            )
-        
-        return dict(sub)
+        try:
+            sub = _row_to_dict(await db_manager.fetch_one(
+                "SELECT * FROM subscriptions WHERE user_id = :user_id",
+                {"user_id": str(user_id)}
+            ))
+            
+            if not sub:
+                # Create default subscription
+                await db_manager.execute_query(
+                    """INSERT INTO subscriptions (user_id, tier, posts_used_today, ai_generations_today)
+                       VALUES (:user_id, 'free', 0, 0)
+                       ON CONFLICT (user_id) DO NOTHING""",
+                    {"user_id": str(user_id)}
+                )
+                sub = _row_to_dict(await db_manager.fetch_one(
+                    "SELECT * FROM subscriptions WHERE user_id = :user_id",
+                    {"user_id": str(user_id)}
+                ))
+            
+            return sub or {"tier": "free", "token_balance": 0}
+        except Exception as e:
+            logger.error(f"Error in get_or_create_subscription: {e}")
+            return {"tier": "free", "token_balance": 0}
     
     # =========================================================================
     # TIER MANAGEMENT
     # =========================================================================
     
-    async def update_tier_from_balance(
-        self, 
-        user_id: UUID, 
-        wallet_address: str
-    ) -> dict:
-        """
-        Update user's tier based on their current token balance
-        Called after wallet verification or balance check
-        """
-        # Get fresh balance from blockchain
-        balance = await token_service.get_token_balance(wallet_address)
-        token_balance = int(balance.ui_balance)
-        
-        # Get current subscription
-        sub = await self.get_or_create_subscription(user_id)
-        current_tier = sub["tier"]
-        
-        # Determine tier based on balance
-        # Note: For premium/agency, user must also have active subscription
-        if token_balance >= MINIMUM_HOLD["agency"]:
-            eligible_tier = "agency" if current_tier == "agency" else "basic"
-        elif token_balance >= MINIMUM_HOLD["basic"]:
-            eligible_tier = "basic"
-        else:
-            eligible_tier = "free"
-        
-        # If they have an active paid subscription, keep it
-        if current_tier in ["premium", "agency"]:
-            if sub.get("renews_at") and datetime.now() < sub["renews_at"]:
-                eligible_tier = current_tier
-        
-        # Update subscription
-        await self.db.execute(
-            """
-            UPDATE subscriptions 
-            SET token_balance = $1, tier = $2, updated_at = NOW()
-            WHERE user_id = $3
-            """,
-            token_balance, eligible_tier, str(user_id)
-        )
-        
-        logger.info(f"Updated tier for user {user_id}: {current_tier} -> {eligible_tier} (balance: {token_balance})")
-        
-        return {
-            "previous_tier": current_tier,
-            "new_tier": eligible_tier,
-            "token_balance": token_balance,
-            "can_upgrade_to": self._get_upgrade_options(eligible_tier, token_balance)
-        }
-    
-    def _get_upgrade_options(self, current_tier: str, balance: int) -> list[dict]:
-        """Get available upgrade options for user"""
-        options = []
-        
-        if current_tier == "free":
-            options.append({
-                "tier": "basic",
-                "required_hold": MINIMUM_HOLD["basic"],
-                "monthly_burn": 0,
-                "tokens_needed": max(0, MINIMUM_HOLD["basic"] - balance),
-                "description": "Hold 100 $SOCIAL for Basic access"
-            })
-        
-        if current_tier in ["free", "basic"]:
-            options.append({
-                "tier": "premium",
-                "required_hold": MINIMUM_HOLD["premium"],
-                "monthly_burn": SUBSCRIPTION_BURN_AMOUNTS["premium"],
-                "tokens_needed": max(0, MINIMUM_HOLD["premium"] - balance),
-                "description": "Hold 100 + burn 25/month for Premium"
-            })
-        
-        if current_tier in ["free", "basic", "premium"]:
-            options.append({
-                "tier": "agency",
-                "required_hold": MINIMUM_HOLD["agency"],
-                "monthly_burn": SUBSCRIPTION_BURN_AMOUNTS["agency"],
-                "tokens_needed": max(0, MINIMUM_HOLD["agency"] - balance),
-                "description": "Hold 500 + burn 100/month for Agency"
-            })
-        
-        return options
+    async def update_tier_from_balance(self, user_id: UUID, wallet_address: str) -> dict:
+        """Update user's tier based on their current token balance"""
+        try:
+            # Get fresh balance from blockchain
+            balance = await token_service.get_token_balance(wallet_address)
+            token_balance = int(balance.ui_balance)
+            
+            # Get current subscription
+            sub = await self.get_or_create_subscription(user_id)
+            current_tier = sub.get("tier", "free")
+            
+            # Determine tier based on balance
+            if token_balance >= MINIMUM_HOLD["agency"]:
+                eligible_tier = "agency" if current_tier == "agency" else "basic"
+            elif token_balance >= MINIMUM_HOLD["basic"]:
+                eligible_tier = "basic"
+            else:
+                eligible_tier = "free"
+            
+            # If they have an active paid subscription, keep it
+            if current_tier in ["premium", "agency"]:
+                renews_at = sub.get("renews_at")
+                if renews_at and datetime.now() < renews_at:
+                    eligible_tier = current_tier
+            
+            # Update subscription
+            await db_manager.execute_query(
+                """UPDATE subscriptions 
+                   SET token_balance = :token_balance, tier = :tier, updated_at = NOW()
+                   WHERE user_id = :user_id""",
+                {"token_balance": token_balance, "tier": eligible_tier, "user_id": str(user_id)}
+            )
+            
+            logger.info(f"Updated tier for user {user_id}: {current_tier} -> {eligible_tier}")
+            
+            return {
+                "previous_tier": current_tier,
+                "new_tier": eligible_tier,
+                "token_balance": token_balance,
+            }
+        except Exception as e:
+            logger.error(f"Error updating tier: {e}")
+            return {"error": str(e)}
     
     # =========================================================================
     # SUBSCRIPTION MANAGEMENT (BURNS)
@@ -287,298 +266,141 @@ class SubscriptionService:
         wallet_address: str,
         auto_renew: bool = True
     ) -> dict:
-        """
-        Subscribe user to a paid tier
-        This will record the burn (actual blockchain burn done separately)
-        """
+        """Subscribe user to a paid tier"""
         if tier not in ["premium", "agency"]:
             return {"success": False, "error": "Invalid tier"}
         
-        # Check balance
-        balance = await token_service.get_token_balance(wallet_address)
-        token_balance = int(balance.ui_balance)
-        required_hold = MINIMUM_HOLD[tier]
-        burn_amount = SUBSCRIPTION_BURN_AMOUNTS[tier]
-        
-        # Verify requirements
-        if token_balance < required_hold:
+        try:
+            # Check balance
+            balance = await token_service.get_token_balance(wallet_address)
+            token_balance = int(balance.ui_balance)
+            required_hold = MINIMUM_HOLD[tier]
+            burn_amount = SUBSCRIPTION_BURN_AMOUNTS[tier]
+            
+            # Verify requirements
+            if token_balance < required_hold:
+                return {
+                    "success": False,
+                    "error": f"Insufficient balance. Need {required_hold} tokens, have {token_balance}"
+                }
+            
+            if token_balance < required_hold + burn_amount:
+                return {
+                    "success": False,
+                    "error": f"Need {required_hold + burn_amount} tokens total"
+                }
+            
+            # Calculate renewal date (30 days from now)
+            renews_at = datetime.now() + timedelta(days=30)
+            
+            # Update subscription
+            await db_manager.execute_query(
+                """INSERT INTO subscriptions (user_id, tier, started_at, renews_at, auto_renew, tokens_burned_total)
+                   VALUES (:user_id, :tier, NOW(), :renews_at, :auto_renew, :burn_amount)
+                   ON CONFLICT (user_id) DO UPDATE SET
+                     tier = :tier,
+                     started_at = COALESCE(subscriptions.started_at, NOW()),
+                     renews_at = :renews_at,
+                     auto_renew = :auto_renew,
+                     tokens_burned_total = COALESCE(subscriptions.tokens_burned_total, 0) + :burn_amount,
+                     updated_at = NOW()""",
+                {
+                    "user_id": str(user_id),
+                    "tier": tier,
+                    "renews_at": renews_at,
+                    "auto_renew": auto_renew,
+                    "burn_amount": burn_amount
+                }
+            )
+            
+            # Record the burn
+            await self._record_burn(user_id, burn_amount, "subscription", tier)
+            
+            # Grant free credits
+            await self._grant_monthly_credits(user_id, tier)
+            
+            logger.info(f"User {user_id} subscribed to {tier}. Burned {burn_amount} tokens.")
+            
             return {
-                "success": False,
-                "error": f"Insufficient balance. Need {required_hold} tokens, have {token_balance}"
+                "success": True,
+                "tier": tier,
+                "burn_amount": burn_amount,
+                "renews_at": renews_at.isoformat(),
+                "auto_renew": auto_renew,
             }
-        
-        # Check if they have enough for the burn (after holding)
-        if token_balance < required_hold + burn_amount:
-            return {
-                "success": False,
-                "error": f"Need {required_hold + burn_amount} tokens total ({required_hold} to hold + {burn_amount} to burn)"
-            }
-        
-        # Calculate renewal date (30 days from now)
-        renews_at = datetime.now() + timedelta(days=30)
-        
-        # Update subscription
-        await self.db.execute(
-            """
-            UPDATE subscriptions 
-            SET tier = $1, 
-                started_at = COALESCE(started_at, NOW()),
-                renews_at = $2,
-                auto_renew = $3,
-                tokens_burned_total = COALESCE(tokens_burned_total, 0) + $4,
-                updated_at = NOW()
-            WHERE user_id = $5
-            """,
-            tier, renews_at, auto_renew, burn_amount, str(user_id)
-        )
-        
-        # Record the burn
-        await self._record_burn(user_id, burn_amount, "subscription", tier)
-        
-        # Grant free credits for the month
-        await self._grant_monthly_credits(user_id, tier)
-        
-        logger.info(f"User {user_id} subscribed to {tier}. Burned {burn_amount} tokens.")
-        
-        return {
-            "success": True,
-            "tier": tier,
-            "burn_amount": burn_amount,
-            "renews_at": renews_at.isoformat(),
-            "auto_renew": auto_renew,
-            "message": f"Successfully subscribed to {tier}! {burn_amount} tokens will be burned."
-        }
+        except Exception as e:
+            logger.error(f"Error subscribing: {e}")
+            return {"success": False, "error": str(e)}
     
     async def cancel_subscription(self, user_id: UUID) -> dict:
-        """
-        Cancel auto-renewal (subscription stays active until renewal date)
-        """
-        sub = await self.get_or_create_subscription(user_id)
-        
-        if sub["tier"] not in ["premium", "agency"]:
-            return {"success": False, "error": "No active subscription"}
-        
-        await self.db.execute(
-            """
-            UPDATE subscriptions 
-            SET auto_renew = FALSE, updated_at = NOW()
-            WHERE user_id = $1
-            """,
-            str(user_id)
-        )
-        
-        return {
-            "success": True,
-            "message": f"Auto-renewal cancelled. Your {sub['tier']} subscription will remain active until {sub['renews_at']}"
-        }
-    
-    async def process_renewal(self, user_id: UUID, wallet_address: str) -> dict:
-        """
-        Process subscription renewal
-        Called by background job or manually
-        """
-        sub = await self.get_or_create_subscription(user_id)
-        
-        if sub["tier"] not in ["premium", "agency"]:
-            return {"success": False, "error": "No subscription to renew"}
-        
-        if not sub.get("auto_renew"):
-            return {"success": False, "error": "Auto-renewal disabled"}
-        
-        # Check if it's time to renew
-        if sub.get("renews_at") and datetime.now() < sub["renews_at"]:
-            return {"success": False, "error": "Not yet due for renewal"}
-        
-        # Check balance
-        balance = await token_service.get_token_balance(wallet_address)
-        token_balance = int(balance.ui_balance)
-        tier = sub["tier"]
-        burn_amount = SUBSCRIPTION_BURN_AMOUNTS[tier]
-        required_hold = MINIMUM_HOLD[tier]
-        
-        if token_balance < required_hold + burn_amount:
-            # Enter grace period
-            grace_period_ends = datetime.now() + timedelta(days=3)
-            await self.db.execute(
-                """
-                UPDATE subscriptions 
-                SET grace_period_ends = $1, updated_at = NOW()
-                WHERE user_id = $2
-                """,
-                grace_period_ends, str(user_id)
+        """Cancel auto-renewal"""
+        try:
+            await db_manager.execute_query(
+                "UPDATE subscriptions SET auto_renew = FALSE, updated_at = NOW() WHERE user_id = :user_id",
+                {"user_id": str(user_id)}
             )
-            return {
-                "success": False,
-                "error": "Insufficient balance for renewal",
-                "grace_period_ends": grace_period_ends.isoformat(),
-                "tokens_needed": required_hold + burn_amount - token_balance
-            }
-        
-        # Process renewal
-        new_renews_at = datetime.now() + timedelta(days=30)
-        
-        await self.db.execute(
-            """
-            UPDATE subscriptions 
-            SET renews_at = $1,
-                tokens_burned_total = tokens_burned_total + $2,
-                grace_period_ends = NULL,
-                updated_at = NOW()
-            WHERE user_id = $3
-            """,
-            new_renews_at, burn_amount, str(user_id)
-        )
-        
-        # Record burn
-        await self._record_burn(user_id, burn_amount, "subscription", tier)
-        
-        # Grant new month's credits
-        await self._grant_monthly_credits(user_id, tier)
-        
-        logger.info(f"Renewed {tier} subscription for user {user_id}")
-        
-        return {
-            "success": True,
-            "tier": tier,
-            "burn_amount": burn_amount,
-            "renews_at": new_renews_at.isoformat()
-        }
-    
-    async def downgrade_expired(self, user_id: UUID) -> dict:
-        """
-        Downgrade user from paid tier after grace period
-        Called by background job
-        """
-        sub = await self.get_or_create_subscription(user_id)
-        
-        if sub["tier"] not in ["premium", "agency"]:
-            return {"success": False, "error": "Not on a paid tier"}
-        
-        # Check grace period
-        if sub.get("grace_period_ends") and datetime.now() < sub["grace_period_ends"]:
-            return {"success": False, "error": "Still in grace period"}
-        
-        # Downgrade to basic (they still hold tokens)
-        await self.db.execute(
-            """
-            UPDATE subscriptions 
-            SET tier = 'basic',
-                renews_at = NULL,
-                auto_renew = FALSE,
-                grace_period_ends = NULL,
-                updated_at = NOW()
-            WHERE user_id = $1
-            """,
-            str(user_id)
-        )
-        
-        logger.info(f"Downgraded user {user_id} to basic tier")
-        
-        return {
-            "success": True,
-            "previous_tier": sub["tier"],
-            "new_tier": "basic"
-        }
+            return {"success": True, "message": "Auto-renewal cancelled"}
+        except Exception as e:
+            logger.error(f"Error cancelling subscription: {e}")
+            return {"success": False, "error": str(e)}
     
     # =========================================================================
     # USAGE TRACKING
     # =========================================================================
     
-    async def check_daily_limit(
-        self,
-        user_id: UUID,
-        limit_type: Literal["posts", "ai_generations"]
-    ) -> dict:
-        """
-        Check if user has remaining daily quota
-        Returns: {"allowed": bool, "used": int, "limit": int, "remaining": int}
-        """
-        sub = await self.get_or_create_subscription(user_id)
-        tier = sub["tier"]
-        limits = DAILY_LIMITS.get(tier, DAILY_LIMITS["free"])
-        limit = limits[limit_type]
-        
-        # Reset if needed
-        await self._check_daily_reset(user_id, sub)
-        
-        # Get fresh usage
-        sub = await self.db.fetch_one(
-            "SELECT * FROM subscriptions WHERE user_id = $1",
-            str(user_id)
-        )
-        
-        if limit_type == "posts":
-            used = sub.get("posts_used_today", 0)
-        else:
-            used = sub.get("ai_generations_today", 0)
-        
-        if limit == -1:  # Unlimited
+    async def check_daily_limit(self, user_id: UUID, limit_type: Literal["posts", "ai_generations"]) -> dict:
+        """Check if user has remaining daily quota"""
+        try:
+            sub = await self.get_or_create_subscription(user_id)
+            tier = sub.get("tier", "free")
+            limits = DAILY_LIMITS.get(tier, DAILY_LIMITS["free"])
+            limit = limits[limit_type]
+            
+            if limit_type == "posts":
+                used = sub.get("posts_used_today", 0)
+            else:
+                used = sub.get("ai_generations_today", 0)
+            
+            if limit == -1:  # Unlimited
+                return {"allowed": True, "used": used, "limit": -1, "remaining": -1}
+            
+            remaining = max(0, limit - used)
+            
             return {
-                "allowed": True,
+                "allowed": remaining > 0,
                 "used": used,
-                "limit": -1,
-                "remaining": -1
+                "limit": limit,
+                "remaining": remaining
             }
-        
-        remaining = max(0, limit - used)
-        
-        return {
-            "allowed": remaining > 0,
-            "used": used,
-            "limit": limit,
-            "remaining": remaining
-        }
+        except Exception as e:
+            logger.error(f"Error checking limit: {e}")
+            return {"allowed": True, "used": 0, "limit": -1, "remaining": -1}
     
-    async def increment_usage(
-        self,
-        user_id: UUID,
-        limit_type: Literal["posts", "ai_generations"],
-        amount: int = 1
-    ) -> dict:
+    async def increment_usage(self, user_id: UUID, limit_type: Literal["posts", "ai_generations"], amount: int = 1) -> dict:
         """Increment daily usage counter"""
-        # Check limit first
-        check = await self.check_daily_limit(user_id, limit_type)
-        
-        if not check["allowed"]:
-            return {
-                "success": False,
-                "error": f"Daily {limit_type} limit reached",
-                **check
-            }
-        
-        column = "posts_used_today" if limit_type == "posts" else "ai_generations_today"
-        
-        await self.db.execute(
-            f"""
-            UPDATE subscriptions 
-            SET {column} = {column} + $1, updated_at = NOW()
-            WHERE user_id = $2
-            """,
-            amount, str(user_id)
-        )
-        
-        return {
-            "success": True,
-            "used": check["used"] + amount,
-            "limit": check["limit"],
-            "remaining": check["remaining"] - amount if check["remaining"] != -1 else -1
-        }
-    
-    async def _check_daily_reset(self, user_id: UUID, sub: dict):
-        """Reset daily counters if needed"""
-        last_reset = sub.get("last_post_reset")
-        
-        if last_reset and last_reset.date() < datetime.now().date():
-            await self.db.execute(
-                """
-                UPDATE subscriptions 
-                SET posts_used_today = 0, 
-                    ai_generations_today = 0,
-                    last_post_reset = NOW()
-                WHERE user_id = $1
-                """,
-                str(user_id)
+        try:
+            # Check limit first
+            check = await self.check_daily_limit(user_id, limit_type)
+            
+            if not check["allowed"]:
+                return {"success": False, "error": f"Daily {limit_type} limit reached", **check}
+            
+            column = "posts_used_today" if limit_type == "posts" else "ai_generations_today"
+            
+            await db_manager.execute_query(
+                f"UPDATE subscriptions SET {column} = {column} + :amount, updated_at = NOW() WHERE user_id = :user_id",
+                {"amount": amount, "user_id": str(user_id)}
             )
+            
+            return {
+                "success": True,
+                "used": check["used"] + amount,
+                "limit": check["limit"],
+                "remaining": check["remaining"] - amount if check["remaining"] != -1 else -1
+            }
+        except Exception as e:
+            logger.error(f"Error incrementing usage: {e}")
+            return {"success": False, "error": str(e)}
     
     # =========================================================================
     # CREDITS
@@ -586,173 +408,128 @@ class SubscriptionService:
     
     async def get_credits(self, user_id: UUID) -> dict:
         """Get user's credit balance"""
-        credits = await self.db.fetch_one(
-            "SELECT * FROM credit_balances WHERE user_id = $1",
-            str(user_id)
-        )
-        
-        if not credits:
-            # Create credit balance record
-            await self.db.execute(
-                """
-                INSERT INTO credit_balances (user_id, credits_balance, free_credits_remaining)
-                VALUES ($1, 0, 0)
-                """,
-                str(user_id)
-            )
-            return {
-                "credits_balance": 0,
-                "credits_used_this_month": 0,
-                "free_credits_remaining": 0
-            }
-        
-        return dict(credits)
+        try:
+            credits = _row_to_dict(await db_manager.fetch_one(
+                "SELECT * FROM credit_balances WHERE user_id = :user_id",
+                {"user_id": str(user_id)}
+            ))
+            
+            if not credits:
+                # Create credit balance record
+                await db_manager.execute_query(
+                    "INSERT INTO credit_balances (user_id, credits_balance, free_credits_remaining) VALUES (:user_id, 0, 0) ON CONFLICT DO NOTHING",
+                    {"user_id": str(user_id)}
+                )
+                return {"credits_balance": 0, "credits_used_this_month": 0, "free_credits_remaining": 0}
+            
+            return credits
+        except Exception as e:
+            logger.error(f"Error getting credits: {e}")
+            return {"credits_balance": 0, "credits_used_this_month": 0, "free_credits_remaining": 0}
     
     async def use_credits(self, user_id: UUID, amount: int, reason: str) -> dict:
-        """
-        Use credits for a feature
-        Returns: {"success": bool, "remaining": int, "error": str?}
-        """
-        credits = await self.get_credits(user_id)
-        total_available = credits["credits_balance"] + credits.get("free_credits_remaining", 0)
-        
-        if total_available < amount:
-            return {
-                "success": False,
-                "error": f"Insufficient credits. Need {amount}, have {total_available}",
-                "remaining": total_available
-            }
-        
-        # Use free credits first, then paid credits
-        free_to_use = min(credits.get("free_credits_remaining", 0), amount)
-        paid_to_use = amount - free_to_use
-        
-        await self.db.execute(
-            """
-            UPDATE credit_balances 
-            SET free_credits_remaining = free_credits_remaining - $1,
-                credits_balance = credits_balance - $2,
-                credits_used_this_month = credits_used_this_month + $3
-            WHERE user_id = $4
-            """,
-            free_to_use, paid_to_use, amount, str(user_id)
-        )
-        
-        logger.info(f"User {user_id} used {amount} credits for {reason}")
-        
-        return {
-            "success": True,
-            "used": amount,
-            "remaining": total_available - amount
-        }
+        """Use credits for a feature"""
+        try:
+            credits = await self.get_credits(user_id)
+            total_available = credits.get("credits_balance", 0) + credits.get("free_credits_remaining", 0)
+            
+            if total_available < amount:
+                return {"success": False, "error": f"Insufficient credits. Need {amount}, have {total_available}", "remaining": total_available}
+            
+            free_to_use = min(credits.get("free_credits_remaining", 0), amount)
+            paid_to_use = amount - free_to_use
+            
+            await db_manager.execute_query(
+                """UPDATE credit_balances 
+                   SET free_credits_remaining = free_credits_remaining - :free,
+                       credits_balance = credits_balance - :paid,
+                       credits_used_this_month = credits_used_this_month + :amount
+                   WHERE user_id = :user_id""",
+                {"free": free_to_use, "paid": paid_to_use, "amount": amount, "user_id": str(user_id)}
+            )
+            
+            return {"success": True, "used": amount, "remaining": total_available - amount}
+        except Exception as e:
+            logger.error(f"Error using credits: {e}")
+            return {"success": False, "error": str(e)}
     
     async def add_credits(self, user_id: UUID, amount: int, reason: str = "purchase") -> dict:
-        """Add credits to user's balance (from token burn)"""
-        await self.db.execute(
-            """
-            INSERT INTO credit_balances (user_id, credits_balance)
-            VALUES ($1, $2)
-            ON CONFLICT (user_id) 
-            DO UPDATE SET credits_balance = credit_balances.credits_balance + $2
-            """,
-            str(user_id), amount
-        )
-        
-        credits = await self.get_credits(user_id)
-        
-        return {
-            "success": True,
-            "added": amount,
-            "new_balance": credits["credits_balance"]
-        }
+        """Add credits to user's balance"""
+        try:
+            await db_manager.execute_query(
+                """INSERT INTO credit_balances (user_id, credits_balance)
+                   VALUES (:user_id, :amount)
+                   ON CONFLICT (user_id) DO UPDATE SET credits_balance = credit_balances.credits_balance + :amount""",
+                {"user_id": str(user_id), "amount": amount}
+            )
+            credits = await self.get_credits(user_id)
+            return {"success": True, "added": amount, "new_balance": credits.get("credits_balance", 0)}
+        except Exception as e:
+            logger.error(f"Error adding credits: {e}")
+            return {"success": False, "error": str(e)}
     
     async def _grant_monthly_credits(self, user_id: UUID, tier: str):
         """Grant free monthly credits based on tier"""
         free_credits = FREE_CREDITS.get(tier, 0)
-        
         if free_credits > 0:
-            await self.db.execute(
-                """
-                INSERT INTO credit_balances (user_id, free_credits_remaining)
-                VALUES ($1, $2)
-                ON CONFLICT (user_id) 
-                DO UPDATE SET free_credits_remaining = $2, last_reset = NOW()
-                """,
-                str(user_id), free_credits
-            )
+            try:
+                await db_manager.execute_query(
+                    """INSERT INTO credit_balances (user_id, free_credits_remaining)
+                       VALUES (:user_id, :credits)
+                       ON CONFLICT (user_id) DO UPDATE SET free_credits_remaining = :credits, last_reset = NOW()""",
+                    {"user_id": str(user_id), "credits": free_credits}
+                )
+            except Exception as e:
+                logger.error(f"Error granting credits: {e}")
     
     # =========================================================================
     # BURN TRACKING
     # =========================================================================
     
-    async def _record_burn(
-        self,
-        user_id: UUID,
-        amount: int,
-        reason: str,
-        tier: Optional[str] = None,
-        tx_signature: Optional[str] = None
-    ):
+    async def _record_burn(self, user_id: UUID, amount: int, reason: str, tier: Optional[str] = None, tx_signature: Optional[str] = None):
         """Record a token burn for transparency"""
-        await self.db.execute(
-            """
-            INSERT INTO token_burns (user_id, amount, reason, tier, tx_signature)
-            VALUES ($1, $2, $3, $4, $5)
-            """,
-            str(user_id), amount, reason, tier, tx_signature
-        )
+        try:
+            await db_manager.execute_query(
+                """INSERT INTO token_burns (user_id, amount, reason, tier, tx_signature)
+                   VALUES (:user_id, :amount, :reason, :tier, :tx_signature)""",
+                {"user_id": str(user_id), "amount": amount, "reason": reason, "tier": tier, "tx_signature": tx_signature}
+            )
+        except Exception as e:
+            logger.error(f"Error recording burn: {e}")
     
-    async def get_burn_history(self, user_id: UUID, limit: int = 20) -> list[dict]:
+    async def get_burn_history(self, user_id: UUID, limit: int = 20) -> list:
         """Get user's burn history"""
-        burns = await self.db.fetch_many(
-            """
-            SELECT * FROM token_burns 
-            WHERE user_id = $1 
-            ORDER BY burned_at DESC 
-            LIMIT $2
-            """,
-            str(user_id), limit
-        )
-        return [dict(b) for b in burns]
+        try:
+            burns = await db_manager.fetch_all(
+                "SELECT * FROM token_burns WHERE user_id = :user_id ORDER BY burned_at DESC LIMIT :limit",
+                {"user_id": str(user_id), "limit": limit}
+            )
+            return [_row_to_dict(b) for b in (burns or [])]
+        except Exception as e:
+            logger.error(f"Error getting burn history: {e}")
+            return []
     
     async def get_platform_burn_stats(self) -> dict:
-        """Get platform-wide burn statistics for transparency dashboard"""
-        stats = await self.db.fetch_one(
-            """
-            SELECT 
-                SUM(amount) as total_burned,
-                COUNT(*) as total_burns,
-                COUNT(DISTINCT user_id) as unique_burners
-            FROM token_burns
-            """
-        )
-        
-        monthly = await self.db.fetch_many(
-            """
-            SELECT * FROM platform_burn_stats LIMIT 12
-            """
-        )
-        
-        return {
-            "total_burned": stats["total_burned"] or 0,
-            "total_burns": stats["total_burns"] or 0,
-            "unique_burners": stats["unique_burners"] or 0,
-            "monthly_breakdown": [dict(m) for m in monthly]
-        }
+        """Get platform-wide burn statistics"""
+        try:
+            stats = _row_to_dict(await db_manager.fetch_one(
+                """SELECT 
+                     COALESCE(SUM(amount), 0) as total_burned,
+                     COUNT(*) as total_burns,
+                     COUNT(DISTINCT user_id) as unique_burners
+                   FROM token_burns"""
+            ))
+            return stats or {"total_burned": 0, "total_burns": 0, "unique_burners": 0}
+        except Exception as e:
+            logger.error(f"Error getting burn stats: {e}")
+            return {"total_burned": 0, "total_burns": 0, "unique_burners": 0}
     
     # =========================================================================
     # FEATURE ACCESS CHECKS
     # =========================================================================
     
-    async def can_use_feature(
-        self,
-        user_id: UUID,
-        feature: str
-    ) -> dict:
-        """
-        Check if user can use a specific feature
-        Features: auto_post, evergreen, brand_voice, flows, competitor_tracking, etc.
-        """
+    async def can_use_feature(self, user_id: UUID, feature: str) -> dict:
+        """Check if user can use a specific feature"""
         status = await self.get_subscription_status(user_id)
         
         feature_requirements = {
@@ -774,18 +551,13 @@ class SubscriptionService:
         required_tiers = feature_requirements.get(feature, [])
         
         if not required_tiers:
-            # Feature available to all
             return {"allowed": True}
         
         if status.tier in required_tiers and status.subscription_active:
             return {"allowed": True}
         
-        # Find minimum tier needed
         tier_order = ["free", "basic", "premium", "agency"]
-        min_tier = None
-        for t in required_tiers:
-            if min_tier is None or tier_order.index(t) < tier_order.index(min_tier):
-                min_tier = t
+        min_tier = required_tiers[0] if required_tiers else "premium"
         
         return {
             "allowed": False,
