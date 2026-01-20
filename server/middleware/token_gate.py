@@ -9,7 +9,7 @@ from typing import Optional, Callable
 from fastapi import HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
 
-from auth_service import get_current_user
+from auth_routes import get_current_user
 from token_service import token_service, get_user_tier
 from subscription_tiers import (
     TierLevel,

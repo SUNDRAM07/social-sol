@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from typing import Optional, Literal
 from uuid import UUID
 
-from auth_service import get_current_user
+from auth_routes import get_current_user
 from models import UserResponse
 from subscription_service import subscription_service
 
