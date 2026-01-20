@@ -5,8 +5,11 @@ import { checkPlatformConnections } from '../lib/apiClient';
 import { Loader2 } from 'lucide-react';
 
 /**
- * Component that checks if user has platform integrations
- * and redirects to settings if none exist, otherwise to dashboard
+ * Component that checks if user needs onboarding or has platform integrations
+ * Redirects accordingly:
+ * - Not authenticated -> /login
+ * - First time (no onboarding completed) -> /onboarding
+ * - Returning user -> /chat
  */
 function FirstTimeUserRedirect() {
   const { isAuthenticated, token } = useAuthStore();
@@ -21,23 +24,19 @@ function FirstTimeUserRedirect() {
         return;
       }
 
-      try {
-        const connections = await checkPlatformConnections();
-        
-        if (connections && !connections.has_connections) {
-          // First-time user with no platform integrations - redirect to settings
-          setRedirectTo('/settings');
-        } else {
-          // User has platform integrations - go to chat
-          setRedirectTo('/chat');
-        }
-      } catch (error) {
-        console.error('Error checking platform connections:', error);
-        // If check fails, default to chat
-        setRedirectTo('/chat');
-      } finally {
+      // Check if onboarding has been completed
+      const onboardingCompleted = localStorage.getItem('onboarding_completed');
+      
+      if (!onboardingCompleted) {
+        // First-time user - show onboarding
+        setRedirectTo('/onboarding');
         setIsChecking(false);
+        return;
       }
+
+      // Returning user - go to chat
+      setRedirectTo('/chat');
+      setIsChecking(false);
     };
 
     checkAndRedirect();

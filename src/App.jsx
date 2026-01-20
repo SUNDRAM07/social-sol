@@ -16,6 +16,7 @@ import Pricing from "./pages/Pricing.jsx";
 import HelpSupport from "./pages/HelpSupport.jsx";
 import Calendar from "./pages/Calendar.jsx";
 import TokenDashboard from "./pages/TokenDashboard.jsx";
+import Onboarding from "./pages/Onboarding.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 
 function App() {
@@ -26,6 +27,13 @@ function App() {
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          
+          {/* Onboarding for first-time users */}
+          <Route path="/onboarding" element={
+            <ProtectedRoute>
+              <Onboarding />
+            </ProtectedRoute>
+          } />
 
           {/* Protected routes */}
           <Route path="/" element={
