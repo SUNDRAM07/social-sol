@@ -51,4 +51,30 @@ export function apiFetch(path, options = {}) {
   });
 }
 
-
+/**
+ * Fetch with auth and automatic JSON parsing
+ * Throws error on non-ok response or success=false
+ */
+export async function fetchWithAuth(path, options = {}) {
+  const response = await apiFetch(path, options);
+  const text = await response.text();
+  
+  let data;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch (e) {
+    if (response.ok) return text;
+    throw new Error(response.statusText || 'Request failed');
+  }
+  
+  if (!response.ok) {
+    const errMsg = data?.error || data?.detail || response.statusText || 'Request failed';
+    throw new Error(errMsg);
+  }
+  
+  if (data && data.success === false) {
+    throw new Error(data.error || data.message || 'Request returned success=false');
+  }
+  
+  return data;
+}

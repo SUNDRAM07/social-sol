@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Flame, Trophy, Zap, TrendingUp } from 'lucide-react';
-import { fetchWithAuth } from '../../utils/api';
+import { fetchWithAuth } from '../../lib/api';
 
 /**
  * StreakCounter - Shows user's posting streak and stats

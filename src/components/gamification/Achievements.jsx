@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Trophy, Lock, Sparkles } from 'lucide-react';
-import { fetchWithAuth } from '../../utils/api';
+import { fetchWithAuth } from '../../lib/api';
 
 // All possible achievements (to show locked ones)
 const ALL_ACHIEVEMENTS = {
