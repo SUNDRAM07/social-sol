@@ -29,6 +29,9 @@ from image_path_utils import convert_url_to_local_path
 # Scheduler imports
 from scheduler_service import scheduler_service, start_scheduler, stop_scheduler
 
+# Tier check imports
+from middleware.tier_check import check_post_limit, check_ai_limit, increment_post_usage, increment_ai_usage
+
 # Load environment variables
 load_dotenv()
 
@@ -1366,7 +1369,12 @@ async def test_usage_log(current_user = Depends(get_current_user_dependency)):
 
 
 @main_app.post("/generate-post", response_model=PostResponse)
-async def generate_post(request: PostRequest, current_user = Depends(get_current_user_dependency)):
+async def generate_post(
+    request: PostRequest, 
+    current_user = Depends(get_current_user_dependency),
+    post_limit = Depends(check_post_limit),  # Checks daily post limit
+    ai_limit = Depends(check_ai_limit)  # Checks AI generation limit
+):
     """Generate Instagram post with image and caption"""
     try:
         if not request.description or len(request.description.strip()) < 3:
@@ -1429,6 +1437,10 @@ async def generate_post(request: PostRequest, current_user = Depends(get_current
         except Exception as db_error:
             print(f"Database save error: {db_error}")
             # Continue without failing the request
+        
+        # Increment usage counters after successful generation
+        await increment_post_usage(current_user.id)
+        await increment_ai_usage(current_user.id)
             
         return PostResponse(success=True, caption=caption, image_path=image_path)
 
@@ -1439,7 +1451,11 @@ async def generate_post(request: PostRequest, current_user = Depends(get_current
 
 
 @main_app.post("/generate-caption", response_model=PostResponse)
-async def generate_caption_endpoint(request: PostRequest):
+async def generate_caption_endpoint(
+    request: PostRequest,
+    current_user = Depends(get_current_user_dependency),
+    ai_limit = Depends(check_ai_limit)  # Checks AI generation limit
+):
     """Generate only Instagram caption"""
     try:
         if not request.description or len(request.description.strip()) < 3:
@@ -1450,6 +1466,9 @@ async def generate_caption_endpoint(request: PostRequest):
 
         description = request.description.strip()
         caption = generate_caption(description, request.caption_provider)
+        
+        # Increment AI usage
+        await increment_ai_usage(current_user.id)
 
         return PostResponse(success=True, caption=caption)
 
@@ -1546,7 +1565,11 @@ async def generate_video_only(request: dict, current_user = Depends(get_current_
 
 
 @main_app.post("/generate-image-only")
-async def generate_image_only(request: dict, current_user = Depends(get_current_user_dependency)):
+async def generate_image_only(
+    request: dict, 
+    current_user = Depends(get_current_user_dependency),
+    ai_limit = Depends(check_ai_limit)  # Checks AI generation limit
+):
     """Generate image only without creating a post (for advanced mode)"""
     try:
         description = request.get("description", "").strip()
@@ -1564,6 +1587,9 @@ async def generate_image_only(request: dict, current_user = Depends(get_current_
             raise HTTPException(
                 status_code=500, detail="Failed to generate image. Please try again."
             )
+        
+        # Increment AI usage
+        await increment_ai_usage(current_user.id)
         
         return {"success": True, "image_path": image_path}
         
@@ -1748,13 +1774,33 @@ def _compute_schedule_dates(num_posts: int, days: int) -> List[str]:
 
 
 @main_app.post("/generate-batch", response_model=BatchResponse)
-async def generate_batch(request: BatchRequest, current_user = Depends(get_current_user_dependency)):
+async def generate_batch(
+    request: BatchRequest, 
+    current_user = Depends(get_current_user_dependency),
+    post_limit = Depends(check_post_limit),  # Checks daily post limit
+    ai_limit = Depends(check_ai_limit)  # Checks AI generation limit
+):
     """Generate multiple posts and return caption, image path, and scheduled time for each."""
     import time
     request_id = int(time.time() * 1000) % 10000
     asset_type_received = getattr(request, 'asset_type', 'NOT_SET') or 'NOT_SET'
     print(f"🔍 DEBUG [{request_id}]: Received request - num_posts: {request.num_posts}, days: {request.days}, description: {request.description}")
     print(f"🔍 DEBUG [{request_id}]: asset_type received: '{asset_type_received}' (type: {type(asset_type_received)})")
+    
+    # Check if user has enough quota for batch
+    posts_remaining = post_limit.get("posts_remaining", -1)
+    if posts_remaining != -1 and request.num_posts > posts_remaining:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "limit_exceeded",
+                "message": f"Batch of {request.num_posts} posts exceeds your remaining limit ({posts_remaining}). Upgrade for unlimited posts.",
+                "remaining": posts_remaining,
+                "requested": request.num_posts,
+                "upgrade_url": "/tokens"
+            }
+        )
+    
     try:
         
         description = (request.description or "").strip()
@@ -1954,6 +2000,12 @@ async def generate_batch(request: BatchRequest, current_user = Depends(get_curre
             except Exception as db_error:
                 print(f"Error updating batch operation: {db_error}")
 
+        # Increment usage counters for each successful post
+        if posts_generated > 0:
+            for _ in range(posts_generated):
+                await increment_post_usage(current_user.id)
+                await increment_ai_usage(current_user.id)
+
         return BatchResponse(success=True, items=items, batch_id=batch_id)
 
     except HTTPException:
@@ -2000,7 +2052,11 @@ async def create_batch_only(request: BatchRequest):
 
 # Database management endpoints
 @main_app.post("/api/posts")
-async def create_post(post_data: dict, current_user = Depends(get_current_user_dependency)):
+async def create_post(
+    post_data: dict, 
+    current_user = Depends(get_current_user_dependency),
+    post_limit = Depends(check_post_limit)  # Checks daily post limit
+):
     """Create a new post in database and associate it with the current user"""
     try:
         # Get default campaign ID

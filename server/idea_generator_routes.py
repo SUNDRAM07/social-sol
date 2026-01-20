@@ -12,6 +12,7 @@ import hashlib
 from datetime import datetime
 from auth_routes import get_current_user_dependency
 from idea_generator_service import IdeaGeneratorService
+from middleware.tier_check import check_ai_limit, increment_ai_usage
 
 router = APIRouter(prefix="/api/idea-generator", tags=["idea-generator"])
 
@@ -60,7 +61,8 @@ class IdeaGenerationResponse(BaseModel):
 @router.post("/generate", response_model=IdeaGenerationResponse)
 async def generate_ideas(
     request: IdeaGenerationRequest,
-    current_user = Depends(get_current_user_dependency)
+    current_user = Depends(get_current_user_dependency),
+    ai_limit = Depends(check_ai_limit)  # Checks daily AI generation limit
 ):
     """
     Generate 5 trending content ideas based on user input with comprehensive analysis
@@ -135,6 +137,9 @@ async def generate_ideas(
         }
         
         print(f"✅ Successfully generated {len(generated_ideas)} ideas")
+        
+        # Increment AI usage counter after successful generation
+        await increment_ai_usage(current_user.id)
         
         return IdeaGenerationResponse(
             success=True,
