@@ -32,6 +32,9 @@ from scheduler_service import scheduler_service, start_scheduler, stop_scheduler
 # Tier check imports
 from middleware.tier_check import check_post_limit, check_ai_limit, increment_post_usage, increment_ai_usage
 
+# Gamification imports
+from gamification_service import gamification_service
+
 # Load environment variables
 load_dotenv()
 
@@ -386,6 +389,11 @@ app.include_router(chat_router)  # Also include on root for direct /chat/* acces
 from subscription_routes import router as subscription_router
 main_app.include_router(subscription_router)
 app.include_router(subscription_router)  # Also include on root for direct access
+
+# Include gamification routes
+from gamification_routes import router as gamification_router
+main_app.include_router(gamification_router)
+app.include_router(gamification_router)
 
 # Import auth dependency after router is included
 from auth_routes import get_current_user_dependency
@@ -1441,6 +1449,9 @@ async def generate_post(
         # Increment usage counters after successful generation
         await increment_post_usage(current_user.id)
         await increment_ai_usage(current_user.id)
+        
+        # Record post for gamification (streak tracking)
+        await gamification_service.record_post(current_user.id)
             
         return PostResponse(success=True, caption=caption, image_path=image_path)
 

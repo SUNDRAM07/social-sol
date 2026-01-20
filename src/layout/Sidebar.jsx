@@ -5,6 +5,7 @@ import clsx from "clsx";
 import ThemeToggle from "../components/ThemeToggle.jsx";
 import UserMenu from "../components/UserMenu.jsx";
 import useAuthStore from "../store/authStore";
+import { StreakCounter } from "../components/gamification";
 import { 
   MessageSquarePlus, 
   Search, 
@@ -262,6 +263,11 @@ function Sidebar() {
 
       {/* Bottom Section */}
       <div className="mt-auto border-t border-white/10">
+        {/* Streak Counter */}
+        <div className="p-3">
+          <StreakCounter variant="compact" />
+        </div>
+
         {/* Upgrade Banner (show only for free/basic tiers) */}
         {(subscriptionTier === "free" || subscriptionTier === "basic") && (
           <div className="p-3">
