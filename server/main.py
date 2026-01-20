@@ -379,6 +379,11 @@ from chat_routes import router as chat_router
 main_app.include_router(chat_router)
 app.include_router(chat_router)  # Also include on root for direct /chat/* access
 
+# Include subscription routes for token economy
+from subscription_routes import router as subscription_router
+main_app.include_router(subscription_router)
+app.include_router(subscription_router)  # Also include on root for direct access
+
 # Import auth dependency after router is included
 from auth_routes import get_current_user_dependency
 from auth_service import auth_service

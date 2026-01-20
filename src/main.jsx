@@ -12,9 +12,9 @@ createRoot(document.getElementById("root")).render(
     <ThemeProvider>
       <WalletProvider>
         <BrowserRouter>
-          <App />
-          <Toaster position="top-right" richColors />
-        </BrowserRouter>
+        <App />
+        <Toaster position="top-right" richColors />
+      </BrowserRouter>
       </WalletProvider>
     </ThemeProvider>
   </StrictMode>

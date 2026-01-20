@@ -15,6 +15,7 @@ import Settings from "./pages/Settings.jsx";
 import Pricing from "./pages/Pricing.jsx";
 import HelpSupport from "./pages/HelpSupport.jsx";
 import Calendar from "./pages/Calendar.jsx";
+import TokenDashboard from "./pages/TokenDashboard.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 
 function App() {
@@ -98,6 +99,13 @@ function App() {
             <ProtectedRoute>
               <AppLayout>
                 <Calendar />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/tokens" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <TokenDashboard />
               </AppLayout>
             </ProtectedRoute>
           } />

@@ -79,6 +79,28 @@ class SchedulerService:
         except Exception as e:
             logger.error(f"Error processing scheduled posts: {e}")
     
+    async def _check_user_can_auto_post(self, user_id: str) -> dict:
+        """Check if user has Premium/Agency tier for auto-posting"""
+        try:
+            from subscription_service import subscription_service
+            from uuid import UUID
+            
+            status = await subscription_service.get_subscription_status(UUID(user_id))
+            
+            return {
+                "allowed": status.can_auto_post,
+                "tier": status.tier,
+                "reason": None if status.can_auto_post else "Auto-posting requires Premium or Agency subscription"
+            }
+        except Exception as e:
+            logger.error(f"Error checking auto-post permission: {e}")
+            # Default to not allowed if check fails
+            return {
+                "allowed": False,
+                "tier": "unknown",
+                "reason": f"Error checking subscription: {str(e)}"
+            }
+    
     async def _publish_post(self, post: Dict[str, Any]):
         """Publish a scheduled post to multiple platforms"""
         post_id = post.get("id")
@@ -96,6 +118,18 @@ class SchedulerService:
             logger.warning(f"No platforms specified for post {post_id}")
             await self._mark_post_failed(post_id, "No platforms specified")
             return
+        
+        # CHECK AUTO-POST PERMISSION (Premium/Agency only)
+        if user_id:
+            permission = await self._check_user_can_auto_post(str(user_id))
+            if not permission["allowed"]:
+                logger.warning(f"User {user_id} cannot auto-post: {permission['reason']} (tier: {permission['tier']})")
+                await self._mark_post_failed(
+                    post_id, 
+                    f"Auto-posting requires Premium subscription. Current tier: {permission['tier']}"
+                )
+                return
+            logger.info(f"User {user_id} has auto-post permission (tier: {permission['tier']})")
         
         # Track results for each platform
         platform_results = {}

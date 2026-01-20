@@ -191,6 +191,162 @@ CREATE TRIGGER update_posting_schedules_updated_at BEFORE UPDATE ON posting_sche
 CREATE TRIGGER update_calendar_events_updated_at BEFORE UPDATE ON calendar_events
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- =====================================================
+-- PHASE 2-4: SOLANA/TOKEN TABLES
+-- =====================================================
+
+-- Wallet addresses linked to users (multiple wallets per user)
+CREATE TABLE user_wallets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    wallet_address VARCHAR(44) UNIQUE NOT NULL,
+    wallet_type VARCHAR(50) DEFAULT 'phantom', -- phantom, solflare, backpack
+    is_primary BOOLEAN DEFAULT FALSE,
+    verified_at TIMESTAMP WITH TIME ZONE,
+    connected_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_used_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- User subscription tiers based on token holdings
+CREATE TABLE user_subscriptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+    tier VARCHAR(20) DEFAULT 'free', -- free, holder, pro, agency
+    token_balance BIGINT DEFAULT 0,
+    last_balance_check TIMESTAMP WITH TIME ZONE,
+    features_unlocked JSONB DEFAULT '{}',
+    posts_used_today INTEGER DEFAULT 0,
+    last_post_reset TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Solana projects using the platform (for on-chain automation)
+CREATE TABLE projects (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    project_name VARCHAR(255) NOT NULL,
+    project_description TEXT,
+    token_address VARCHAR(44), -- Solana token mint address
+    token_symbol VARCHAR(10),
+    token_decimals INTEGER DEFAULT 9,
+    brand_voice TEXT, -- AI personality for content generation
+    logo_url VARCHAR(500),
+    website_url VARCHAR(500),
+    twitter_handle VARCHAR(100),
+    discord_invite VARCHAR(200),
+    trigger_config JSONB DEFAULT '{}',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Automation flows (trigger → action)
+CREATE TABLE flows (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+    flow_name VARCHAR(255) NOT NULL,
+    trigger_type VARCHAR(50) NOT NULL, -- price_milestone, holder_count, whale_alert, time_based
+    trigger_config JSONB NOT NULL, -- threshold, comparison, etc.
+    condition_config JSONB DEFAULT '{}', -- additional conditions
+    ai_prompt TEXT NOT NULL, -- prompt for content generation
+    platforms TEXT[] DEFAULT ARRAY['twitter'], -- where to post
+    cooldown_minutes INTEGER DEFAULT 60, -- prevent spam
+    last_triggered_at TIMESTAMP WITH TIME ZONE,
+    trigger_count INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- On-chain event log (track what happened and what was posted)
+CREATE TABLE onchain_events (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+    flow_id UUID REFERENCES flows(id) ON DELETE SET NULL,
+    event_type VARCHAR(50) NOT NULL, -- price_change, holder_change, large_tx, etc.
+    event_data JSONB NOT NULL, -- raw event details
+    content_generated TEXT, -- AI-generated post content
+    posted_at TIMESTAMP WITH TIME ZONE,
+    platforms_posted TEXT[],
+    post_ids JSONB, -- IDs from each platform
+    status VARCHAR(50) DEFAULT 'pending', -- pending, posted, failed
+    error_message TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Helius webhook registrations
+CREATE TABLE webhook_registrations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+    webhook_id VARCHAR(255), -- Helius webhook ID
+    webhook_url VARCHAR(500) NOT NULL,
+    account_addresses TEXT[], -- addresses being monitored
+    transaction_types TEXT[], -- types of transactions to monitor
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Chat conversations (for AI agent)
+CREATE TABLE conversations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255),
+    last_message_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    message_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Chat messages
+CREATE TABLE messages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
+    role VARCHAR(20) NOT NULL, -- user, assistant, system
+    content TEXT NOT NULL,
+    intent VARCHAR(50), -- parsed intent
+    entities JSONB DEFAULT '{}', -- extracted entities
+    action_taken JSONB, -- what action was executed
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for new tables
+CREATE INDEX idx_user_wallets_user_id ON user_wallets(user_id);
+CREATE INDEX idx_user_wallets_address ON user_wallets(wallet_address);
+CREATE INDEX idx_user_subscriptions_user_id ON user_subscriptions(user_id);
+CREATE INDEX idx_user_subscriptions_tier ON user_subscriptions(tier);
+CREATE INDEX idx_projects_user_id ON projects(user_id);
+CREATE INDEX idx_projects_token_address ON projects(token_address);
+CREATE INDEX idx_flows_project_id ON flows(project_id);
+CREATE INDEX idx_flows_trigger_type ON flows(trigger_type);
+CREATE INDEX idx_flows_is_active ON flows(is_active);
+CREATE INDEX idx_onchain_events_project_id ON onchain_events(project_id);
+CREATE INDEX idx_onchain_events_flow_id ON onchain_events(flow_id);
+CREATE INDEX idx_onchain_events_event_type ON onchain_events(event_type);
+CREATE INDEX idx_onchain_events_created_at ON onchain_events(created_at);
+CREATE INDEX idx_webhook_registrations_project_id ON webhook_registrations(project_id);
+CREATE INDEX idx_conversations_user_id ON conversations(user_id);
+CREATE INDEX idx_conversations_last_message ON conversations(last_message_at);
+CREATE INDEX idx_messages_conversation_id ON messages(conversation_id);
+CREATE INDEX idx_messages_created_at ON messages(created_at);
+
+-- Triggers for new tables
+CREATE TRIGGER update_user_subscriptions_updated_at BEFORE UPDATE ON user_subscriptions
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_projects_updated_at BEFORE UPDATE ON projects
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_flows_updated_at BEFORE UPDATE ON flows
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_webhook_registrations_updated_at BEFORE UPDATE ON webhook_registrations
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_conversations_updated_at BEFORE UPDATE ON conversations
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- Insert default campaign for uncategorized posts
 INSERT INTO campaigns (id, name, description) 
 VALUES (uuid_generate_v4(), 'Default Campaign', 'Default campaign for uncategorized social media posts');
