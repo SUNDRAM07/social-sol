@@ -17,7 +17,8 @@ import {
   X
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
-import { checkPlatformConnections, apiUrl } from '../../lib/apiClient';
+import { checkPlatformConnections } from '../../lib/apiClient';
+import { apiUrl } from '../../lib/api';
 
 const STEPS = [
   {
