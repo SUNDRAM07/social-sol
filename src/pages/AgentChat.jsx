@@ -676,11 +676,31 @@ const AgentChat = () => {
                 <ChatMessage 
                   key={message.id} 
                   message={message}
-                  onRegenerate={(id) => {
-                    const idx = messages.findIndex(m => m.id === id);
+                  onRegenerate={() => {
+                    const idx = messages.findIndex(m => m.id === message.id);
                     if (idx > 0 && messages[idx-1].role === 'user') {
-                      setMessages(prev => prev.filter(m => m.id !== id));
+                      setMessages(prev => prev.filter(m => m.id !== message.id));
                       handleSend(messages[idx-1].content);
+                    }
+                  }}
+                  onSendMessage={handleSend}
+                  onAction={(action, data) => {
+                    // Handle action card interactions
+                    switch (action) {
+                      case 'schedule':
+                        navigate('/calendar', { state: { posts: data } });
+                        break;
+                      case 'edit':
+                        handleSend(`Edit this post: "${data.post?.content || data.post}"`);
+                        break;
+                      case 'view_analytics':
+                        navigate('/analytics');
+                        break;
+                      case 'connect':
+                        navigate('/settings', { state: { connectPlatform: data } });
+                        break;
+                      default:
+                        console.log('Action:', action, data);
                     }
                   }}
                 />
@@ -696,6 +716,7 @@ const AgentChat = () => {
                     timestamp: new Date().toISOString(),
                   }}
                   isStreaming={true}
+                  onSendMessage={handleSend}
                 />
               )}
               
