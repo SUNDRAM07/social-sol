@@ -482,7 +482,9 @@ const AgentChat = () => {
             role: 'assistant',
             content: result.content,
             timestamp: new Date().toISOString(),
-            intent: result.intent,
+            // Extract intent string and entities from the intent object
+            intent: result.intent?.intent || result.intent,
+            entities: result.intent?.entities || {},
             actions: result.actions,
           }]);
           
@@ -508,6 +510,9 @@ const AgentChat = () => {
               role: 'assistant',
               content: response.content,
               timestamp: response.timestamp,
+              intent: response.intent,
+              entities: response.entities || {},
+              actions: response.actions,
             }]);
             
             loadConversations();
@@ -518,6 +523,7 @@ const AgentChat = () => {
               role: 'assistant',
               content: generateFallbackResponse(content),
               timestamp: new Date().toISOString(),
+              intent: 'general_chat', // Show quick actions for fallback
             }]);
           }
           setIsLoading(false);
@@ -532,6 +538,7 @@ const AgentChat = () => {
         role: 'assistant',
         content: generateFallbackResponse(content),
         timestamp: new Date().toISOString(),
+        intent: 'general_chat', // Show quick actions for fallback
       }]);
       setIsLoading(false);
     }

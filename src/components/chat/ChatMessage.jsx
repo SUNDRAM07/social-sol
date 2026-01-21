@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { User, Bot, Copy, Check, RefreshCw, ThumbsUp, ThumbsDown, Sparkles } from 'lucide-react';
 import ChatActionCard from './ChatActionCard';
 
-const ChatMessage = ({ 
-  message, 
+const ChatMessage = ({
+  message,
   isStreaming = false,
   onRegenerate,
   onCopy,
@@ -28,13 +28,13 @@ const ChatMessage = ({
   // Simple markdown-like rendering
   const renderContent = (text) => {
     if (!text) return null;
-    
+
     return text.split('\n').map((line, i) => {
       // Bold text
       let processedLine = line.replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>');
       // Inline code
       processedLine = processedLine.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-white/10 text-[#14F195] text-sm font-mono">$1</code>');
-      
+
       // Headers
       if (line.startsWith('### ')) {
         return <h3 key={i} className="text-lg font-bold text-white mt-4 mb-2" dangerouslySetInnerHTML={{ __html: processedLine.slice(4) }} />;
@@ -65,8 +65,8 @@ const ChatMessage = ({
         return (
           <div key={i} className="flex gap-4 py-1">
             {cells.map((cell, j) => (
-              <span 
-                key={j} 
+              <span
+                key={j}
                 className={`flex-1 text-sm ${isHeader ? 'font-semibold text-white' : 'text-white/70'}`}
               >
                 {cell.trim()}
@@ -87,7 +87,7 @@ const ChatMessage = ({
   };
 
   return (
-    <div 
+    <div
       className={`
         group relative py-6 px-4 md:px-8
         ${isUser ? '' : 'bg-white/[0.02]'}
@@ -98,8 +98,8 @@ const ChatMessage = ({
         {/* Avatar */}
         <div className={`
           w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0
-          ${isUser 
-            ? 'bg-gradient-to-br from-blue-500 to-purple-600' 
+          ${isUser
+            ? 'bg-gradient-to-br from-blue-500 to-purple-600'
             : 'bg-gradient-to-br from-[#9945FF] to-[#14F195] shadow-lg shadow-[#9945FF]/20'}
         `}>
           {isUser ? (
@@ -143,8 +143,9 @@ const ChatMessage = ({
                 ideas: message.ideas,
                 times: message.times,
                 metrics: message.metrics,
-                platform: message.platform,
+                platform: message.entities?.platforms?.[0] || message.platform,
                 actions: message.actions,
+                ...message.entities, // Spread all entities
               }}
               onSendMessage={onSendMessage}
               onAction={onAction}
@@ -190,8 +191,8 @@ const ChatMessage = ({
                 <button
                   onClick={() => handleFeedback('up')}
                   className={`p-1.5 rounded-lg transition-all duration-200
-                    ${feedback === 'up' 
-                      ? 'bg-[#14F195]/20 text-[#14F195]' 
+                    ${feedback === 'up'
+                      ? 'bg-[#14F195]/20 text-[#14F195]'
                       : 'text-white/30 hover:text-white hover:bg-white/[0.08]'}`}
                 >
                   <ThumbsUp className="w-3.5 h-3.5" />
@@ -199,8 +200,8 @@ const ChatMessage = ({
                 <button
                   onClick={() => handleFeedback('down')}
                   className={`p-1.5 rounded-lg transition-all duration-200
-                    ${feedback === 'down' 
-                      ? 'bg-red-500/20 text-red-400' 
+                    ${feedback === 'down'
+                      ? 'bg-red-500/20 text-red-400'
                       : 'text-white/30 hover:text-white hover:bg-white/[0.08]'}`}
                 >
                   <ThumbsDown className="w-3.5 h-3.5" />
