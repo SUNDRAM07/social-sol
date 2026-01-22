@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { 
-  Menu, X, Sparkles, Zap, AlertCircle, Bot, User, 
+import {
+  Menu, X, Sparkles, Zap, AlertCircle, Bot, User,
   Rocket, Calendar, TrendingUp, Lightbulb, Image as ImageIcon,
   BarChart3, Hash, Send, Plus, MessageSquare, Search,
   Settings, Trash2, Copy, RefreshCw, ThumbsUp, ThumbsDown,
@@ -14,7 +14,7 @@ import { useAuthStore } from '../store/authStore';
 // ANIMATED GRADIENT ORB COMPONENT
 // ============================================
 const GradientOrb = ({ className = "", delay = 0 }) => (
-  <div 
+  <div
     className={`absolute rounded-full blur-3xl opacity-30 animate-pulse ${className}`}
     style={{ animationDelay: `${delay}s`, animationDuration: '4s' }}
   />
@@ -27,10 +27,10 @@ const TypingIndicator = () => (
   <div className="flex items-center gap-1.5 px-4 py-2">
     <div className="flex gap-1">
       {[0, 1, 2].map((i) => (
-        <span 
+        <span
           key={i}
           className="w-2 h-2 rounded-full bg-gradient-to-r from-[#9945FF] to-[#14F195]"
-          style={{ 
+          style={{
             animation: 'bounce 1.4s ease-in-out infinite',
             animationDelay: `${i * 0.16}s`
           }}
@@ -95,8 +95,8 @@ const ChatMessage = ({ message, onRegenerate, onCopy, isStreaming = false }) => 
         {/* Avatar */}
         <div className={`
           w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0
-          ${isUser 
-            ? 'bg-gradient-to-br from-blue-500 to-purple-600' 
+          ${isUser
+            ? 'bg-gradient-to-br from-blue-500 to-purple-600'
             : 'bg-gradient-to-br from-[#9945FF] to-[#14F195] shadow-lg shadow-[#9945FF]/20'}
         `}>
           {isUser ? <User className="w-5 h-5 text-white" /> : <Bot className="w-5 h-5 text-white" />}
@@ -114,7 +114,7 @@ const ChatMessage = ({ message, onRegenerate, onCopy, isStreaming = false }) => 
               </span>
             )}
           </div>
-          
+
           <div className="prose prose-invert max-w-none">
             {renderContent(message.content)}
             {isStreaming && (
@@ -125,14 +125,14 @@ const ChatMessage = ({ message, onRegenerate, onCopy, isStreaming = false }) => 
           {/* Actions */}
           {!isUser && (
             <div className="flex items-center gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button 
+              <button
                 onClick={handleCopy}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/60 hover:text-white hover:bg-white/10 transition-all"
               >
                 <Copy className="w-3.5 h-3.5" />
                 {copied ? 'Copied!' : 'Copy'}
               </button>
-              <button 
+              <button
                 onClick={() => onRegenerate?.(message.id)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/60 hover:text-white hover:bg-white/10 transition-all"
               >
@@ -167,7 +167,7 @@ const QuickActionCard = ({ icon: Icon, title, description, gradient, onClick }) 
   >
     {/* Gradient glow on hover */}
     <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${gradient} blur-xl -z-10`} />
-    
+
     <div className={`w-10 h-10 rounded-xl mb-3 flex items-center justify-center ${gradient}`}>
       <Icon className="w-5 h-5 text-white" />
     </div>
@@ -184,19 +184,19 @@ const QuickActionCard = ({ icon: Icon, title, description, gradient, onClick }) 
 // ============================================
 // SIDEBAR COMPONENT
 // ============================================
-const Sidebar = ({ 
-  conversations, 
-  activeConversation, 
-  onSelectConversation, 
+const Sidebar = ({
+  conversations,
+  activeConversation,
+  onSelectConversation,
   onNewConversation,
   onDeleteConversation,
   isOpen,
-  onClose 
+  onClose
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [hoveredId, setHoveredId] = useState(null);
 
-  const filteredConversations = conversations.filter(conv => 
+  const filteredConversations = conversations.filter(conv =>
     conv.title?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -253,20 +253,20 @@ const Sidebar = ({
                 className={`
                   group relative flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer
                   transition-all duration-200
-                  ${activeConversation === conv.id 
-                    ? 'bg-gradient-to-r from-[#9945FF]/20 to-[#14F195]/10 border border-[#9945FF]/30' 
+                  ${activeConversation === conv.id
+                    ? 'bg-gradient-to-r from-[#9945FF]/20 to-[#14F195]/10 border border-[#9945FF]/30'
                     : 'hover:bg-white/[0.05] border border-transparent'}
                 `}
               >
                 <div className={`
                   w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors
-                  ${activeConversation === conv.id 
-                    ? 'bg-gradient-to-br from-[#9945FF] to-[#14F195]' 
+                  ${activeConversation === conv.id
+                    ? 'bg-gradient-to-br from-[#9945FF] to-[#14F195]'
                     : 'bg-white/[0.08] group-hover:bg-white/[0.12]'}
                 `}>
                   <MessageSquare className="w-4 h-4 text-white/80" />
                 </div>
-                
+
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white/90 truncate">
                     {conv.title || conv.preview || 'New conversation'}
@@ -274,7 +274,7 @@ const Sidebar = ({
                 </div>
 
                 {hoveredId === conv.id && (
-                  <button 
+                  <button
                     onClick={(e) => { e.stopPropagation(); onDeleteConversation?.(conv.id); }}
                     className="p-1.5 rounded-lg hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-all"
                   >
@@ -339,8 +339,8 @@ const ChatInput = ({ onSend, isLoading, onStop }) => {
             relative flex items-end gap-2 p-2 rounded-2xl
             bg-white/[0.05] backdrop-blur-sm
             border transition-all duration-300
-            ${isFocused 
-              ? 'border-[#9945FF]/50 shadow-lg shadow-[#9945FF]/10' 
+            ${isFocused
+              ? 'border-[#9945FF]/50 shadow-lg shadow-[#9945FF]/10'
               : 'border-white/[0.08] hover:border-white/[0.15]'}
           `}>
             <button
@@ -397,7 +397,7 @@ const ChatInput = ({ onSend, isLoading, onStop }) => {
         </form>
 
         <p className="text-center text-xs text-white/30 mt-3">
-          Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white/50 mx-1">Enter</kbd> to send · 
+          Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white/50 mx-1">Enter</kbd> to send ·
           <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white/50 mx-1">Shift + Enter</kbd> for new line
         </p>
       </div>
@@ -411,7 +411,7 @@ const ChatInput = ({ onSend, isLoading, onStop }) => {
 const AgentChat = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuthStore();
-  
+
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -447,7 +447,7 @@ const AgentChat = () => {
   const handleSend = async (content) => {
     if (!content.trim()) return;
     setError(null);
-    
+
     const userMessage = {
       id: Date.now().toString(),
       role: 'user',
@@ -472,11 +472,11 @@ const AgentChat = () => {
         (result) => {
           setIsStreaming(false);
           setStreamingContent('');
-          
+
           if (result.conversationId && !activeConversation) {
             setActiveConversation(result.conversationId);
           }
-          
+
           setMessages(prev => [...prev, {
             id: (Date.now() + 1).toString(),
             role: 'assistant',
@@ -487,7 +487,7 @@ const AgentChat = () => {
             entities: result.intent?.entities || {},
             actions: result.actions,
           }]);
-          
+
           loadConversations();
           setIsLoading(false);
         },
@@ -496,15 +496,15 @@ const AgentChat = () => {
           console.error('Streaming failed, falling back:', err);
           setIsStreaming(false);
           setStreamingContent('');
-          
+
           try {
             // Fallback to regular API
             const response = await sendChatMessage(content, activeConversation);
-            
+
             if (!activeConversation && response.conversation_id) {
               setActiveConversation(response.conversation_id);
             }
-            
+
             setMessages(prev => [...prev, {
               id: response.message_id || (Date.now() + 1).toString(),
               role: 'assistant',
@@ -514,7 +514,7 @@ const AgentChat = () => {
               entities: response.entities || {},
               actions: response.actions,
             }]);
-            
+
             loadConversations();
           } catch (fallbackErr) {
             // Use local fallback
@@ -623,7 +623,7 @@ const AgentChat = () => {
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#14F195]/10 border border-[#14F195]/20">
               <div className="w-2 h-2 rounded-full bg-[#14F195] animate-pulse" />
@@ -653,7 +653,7 @@ const AgentChat = () => {
                       <Sparkles className="w-12 h-12 text-white" />
                     </div>
                   </div>
-                  
+
                   <h2 className="text-4xl font-bold text-white mb-4 tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                     Welcome to <span className="bg-gradient-to-r from-[#9945FF] via-[#14F195] to-[#00D4FF] bg-clip-text text-transparent">Social Sol AI</span>
                   </h2>
@@ -680,14 +680,14 @@ const AgentChat = () => {
           ) : (
             <div>
               {messages.map((message) => (
-                <ChatMessage 
-                  key={message.id} 
+                <ChatMessage
+                  key={message.id}
                   message={message}
                   onRegenerate={() => {
                     const idx = messages.findIndex(m => m.id === message.id);
-                    if (idx > 0 && messages[idx-1].role === 'user') {
+                    if (idx > 0 && messages[idx - 1].role === 'user') {
                       setMessages(prev => prev.filter(m => m.id !== message.id));
-                      handleSend(messages[idx-1].content);
+                      handleSend(messages[idx - 1].content);
                     }
                   }}
                   onSendMessage={handleSend}
@@ -712,10 +712,10 @@ const AgentChat = () => {
                   }}
                 />
               ))}
-              
+
               {/* Streaming Message Display */}
               {isStreaming && streamingContent && (
-                <ChatMessage 
+                <ChatMessage
                   message={{
                     id: 'streaming',
                     role: 'assistant',
@@ -726,7 +726,7 @@ const AgentChat = () => {
                   onSendMessage={handleSend}
                 />
               )}
-              
+
               {/* Loading Indicator (only when not streaming) */}
               {isLoading && !streamingContent && (
                 <div className="py-6 px-4 md:px-8 bg-white/[0.02]">
@@ -738,14 +738,14 @@ const AgentChat = () => {
                   </div>
                 </div>
               )}
-              
+
               <div ref={messagesEndRef} />
             </div>
           )}
         </div>
 
         {/* Input */}
-        <ChatInput 
+        <ChatInput
           onSend={handleSend}
           isLoading={isLoading}
           onStop={() => setIsLoading(false)}

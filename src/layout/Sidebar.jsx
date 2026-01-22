@@ -3,7 +3,8 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useWallet } from '@solana/wallet-adapter-react';
 import clsx from "clsx";
 import ThemeToggle from "../components/ThemeToggle.jsx";
-import UserMenu from "../components/UserMenu.jsx";
+import ProfileDropdown from "../components/ui/ProfileDropdown.jsx";
+import SettingsModal from "../components/ui/SettingsModal.jsx";
 import useAuthStore from "../store/authStore";
 import { StreakCounter } from "../components/gamification";
 import { 
@@ -55,6 +56,7 @@ function Sidebar() {
   const [showChats, setShowChats] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [subscriptionTier, setSubscriptionTier] = useState("free");
+  const [showSettings, setShowSettings] = useState(false);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -308,11 +310,19 @@ function Sidebar() {
           })}
         </nav>
 
-        {/* User Profile */}
+        {/* User Profile with Enhanced Dropdown */}
         <div className="p-3 border-t border-white/10">
-          <UserMenu />
+          <ProfileDropdown 
+            showSettingsModal={() => setShowSettings(true)}
+          />
         </div>
       </div>
+
+      {/* Settings Modal */}
+      <SettingsModal 
+        isOpen={showSettings} 
+        onClose={() => setShowSettings(false)} 
+      />
     </aside>
   );
 }
