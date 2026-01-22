@@ -139,11 +139,17 @@ function Sidebar() {
       {/* Header with Logo */}
       <div className="p-4 border-b border-white/10">
         <div className="flex items-center justify-between">
-          <img
-            src="/socialanywhere/agent-anywhere-logo-light.png"
-            alt="SocialAnywhere"
-            className="h-8 w-auto object-contain"
-          />
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-purple-500/50 rounded-lg"
+            aria-label="Go to Dashboard"
+          >
+            <img
+              src="/socialanywhere/new-logo.svg"
+              alt="SocialAnywhere"
+              className="h-10 w-auto object-contain"
+            />
+          </button>
           <div className="flex items-center gap-2">
             {isLoading ? (
               <div className="animate-pulse bg-white/10 rounded-full w-12 h-5" />
