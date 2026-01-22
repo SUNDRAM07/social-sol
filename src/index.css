@@ -99,12 +99,13 @@ body,
   }
 
   .glass-hover {
-    transition: all var(--transition-normal);
+    /* Specific transitions instead of 'all' for better performance */
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background 0.2s ease-out;
   }
 
   .glass-hover:hover {
     background: rgba(255, 255, 255, 0.42);
-    transform: translateY(-6px) scale(1.01);
+    transform: translateY(-6px) scale(1.01) translateZ(0);
     box-shadow: 0 18px 60px 0 rgba(31, 38, 135, 0.45);
   }
 
@@ -156,9 +157,12 @@ body,
     box-shadow: 0 8px 30px rgba(113, 40, 137, 0.18);
   }
 
-  /* Animation Utilities */
+  /* Animation Utilities - GPU Accelerated */
   .animate-float {
     animation: float 6s ease-in-out infinite;
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
 
   .animate-glow {
@@ -213,13 +217,16 @@ body,
   50% { box-shadow: 0 12px 48px rgba(229, 23, 62, 0.25); }
 }
 
-/* Additional utility classes */
+/* Additional utility classes - Optimized */
 .hover-lift {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Only transition transform and box-shadow, not 'all' */
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .hover-lift:hover {
-  transform: translateY(-8px) scale(1.02);
+  transform: translateY(-8px) scale(1.02) translateZ(0);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
 }
 
@@ -255,13 +262,15 @@ body,
   transform: scale(1.05) rotate(1deg);
 }
 
-/* Smooth transitions for theme switching */
-* {
-  transition: background-color var(--transition-normal),
-              border-color var(--transition-normal),
-              color var(--transition-normal),
-              transform var(--transition-normal),
-              box-shadow var(--transition-normal);
+/* 
+ * REMOVED: Universal transition rule was causing major INP issues
+ * Instead, apply transitions only to elements that need them
+ * using Tailwind's transition utilities or specific classes
+ */
+
+/* Theme transition - only on body for color scheme changes */
+body {
+  transition: background-color 0.2s ease-out, color 0.2s ease-out;
 }
 
 /* Enhanced glass morphism with better blur */
@@ -279,36 +288,26 @@ body,
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
 }
 
-/* Modern card hover effects */
+/* Modern card hover effects - Optimized for performance */
 .card-modern {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  transition: all var(--transition-normal);
+  /* Only transition specific properties, not 'all' */
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, border-color 0.2s ease-out;
   position: relative;
   overflow: hidden;
+  /* GPU acceleration */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
-.card-modern::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
-  transition: left 0.5s ease;
-}
-
+/* Removed expensive ::before animation - replaced with simpler hover */
 .card-modern:hover {
-  transform: translateY(-4px);
+  transform: translateY(-4px) translateZ(0);
   box-shadow: var(--shadow-colored);
   border-color: rgba(102, 126, 234, 0.3);
-}
-
-.card-modern:hover::before {
-  left: 100%;
 }
 
 /* Gradient border effect */
