@@ -145,9 +145,9 @@ function Sidebar() {
             aria-label="Go to Dashboard"
           >
             <img
-              src="/socialanywhere/new-logo.svg"
+              src="/socialanywhere/agent-anywhere-logo-light.png"
               alt="SocialAnywhere"
-              className="h-10 w-auto object-contain"
+              className="h-8 w-auto object-contain"
             />
           </button>
           <div className="flex items-center gap-2">
