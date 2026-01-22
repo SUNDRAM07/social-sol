@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, memo } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useWallet } from '@solana/wallet-adapter-react';
 import clsx from "clsx";
@@ -6,24 +6,22 @@ import ThemeToggle from "../components/ThemeToggle.jsx";
 import ProfileDropdown from "../components/ui/ProfileDropdown.jsx";
 import SettingsModal from "../components/ui/SettingsModal.jsx";
 import useAuthStore from "../store/authStore";
-import { StreakCounter } from "../components/gamification";
-import { 
-  MessageSquarePlus, 
-  Search, 
-  LayoutDashboard, 
-  Calendar, 
-  BarChart3, 
-  Lightbulb, 
+import useSidebarData from "../hooks/useSidebarData";
+import {
+  MessageSquarePlus,
+  LayoutDashboard,
+  Calendar,
+  BarChart3,
+  Lightbulb,
   FolderOpen,
-  Zap,
   Coins,
   Settings,
   HelpCircle,
   ChevronDown,
   ChevronRight,
   MessageSquare,
-  Clock,
-  Crown
+  Crown,
+  Flame
 } from "lucide-react";
 
 // Main navigation items
@@ -47,54 +45,78 @@ const secondaryNavItems = [
   { to: "/help-support", label: "Help & Support", icon: HelpCircle },
 ];
 
+// Memoized navigation item to prevent unnecessary re-renders
+const NavItem = memo(({ item, isActive }) => {
+  const Icon = item.icon;
+  return (
+    <NavLink
+      to={item.to}
+      className={clsx(
+        "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+        isActive
+          ? "bg-white/10 text-white"
+          : "text-gray-400 hover:bg-white/5 hover:text-white"
+      )}
+    >
+      <Icon className="h-5 w-5" />
+      <span>{item.label}</span>
+      {item.badge && (
+        <span className="ml-auto text-xs px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded-full">
+          {item.badge}
+        </span>
+      )}
+    </NavLink>
+  );
+});
+
+NavItem.displayName = 'NavItem';
+
+// Compact streak counter using cached data
+const CompactStreak = memo(({ stats }) => {
+  if (!stats) {
+    return <div className="animate-pulse bg-white/5 rounded-lg p-3 h-14" />;
+  }
+
+  return (
+    <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-xl p-3 border border-orange-500/20">
+      <div className="flex items-center gap-3">
+        <div className={`p-2 rounded-lg ${stats.current_streak > 0 ? 'bg-orange-500/20' : 'bg-gray-500/20'}`}>
+          <Flame className={`w-5 h-5 ${stats.current_streak > 0 ? 'text-orange-400' : 'text-gray-400'}`} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-xl font-bold text-white">
+              {stats.current_streak || 0}
+            </span>
+            <span className="text-xs text-gray-400">day streak</span>
+          </div>
+          <p className="text-xs text-gray-500 truncate">
+            {stats.total_posts || 0} total posts
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+CompactStreak.displayName = 'CompactStreak';
+
 function Sidebar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { connected } = useWallet();
-  const { token, user } = useAuthStore();
-  const [recentChats, setRecentChats] = useState([]);
+  const { user } = useAuthStore();
   const [showChats, setShowChats] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [subscriptionTier, setSubscriptionTier] = useState("free");
   const [showSettings, setShowSettings] = useState(false);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-  // Fetch recent conversations
-  useEffect(() => {
-    if (token) {
-      fetchRecentChats();
-      fetchSubscriptionStatus();
-    }
-  }, [token]);
-
-  const fetchRecentChats = async () => {
-    try {
-      const response = await fetch(`${API_URL}/chat/conversations?limit=5`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setRecentChats(data.conversations || []);
-      }
-    } catch (err) {
-      console.error('Error fetching chats:', err);
-    }
-  };
-
-  const fetchSubscriptionStatus = async () => {
-    try {
-      const response = await fetch(`${API_URL}/subscription/status`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setSubscriptionTier(data.tier || "free");
-      }
-    } catch (err) {
-      console.error('Error fetching subscription:', err);
-    }
-  };
+  // Use centralized data hook - single source of truth
+  const {
+    subscriptionTier,
+    subscriptionData,
+    recentChats,
+    connectedPlatforms,
+    gamificationStats,
+    isLoading,
+  } = useSidebarData();
 
   const handleNewChat = () => {
     navigate('/chat');
@@ -123,9 +145,13 @@ function Sidebar() {
             className="h-8 w-auto object-contain"
           />
           <div className="flex items-center gap-2">
-            <span className={clsx("text-xs px-2 py-1 rounded-full", tierBadge.color)}>
-              {tierBadge.text}
-            </span>
+            {isLoading ? (
+              <div className="animate-pulse bg-white/10 rounded-full w-12 h-5" />
+            ) : (
+              <span className={clsx("text-xs px-2 py-1 rounded-full", tierBadge.color)}>
+                {tierBadge.text}
+              </span>
+            )}
             <ThemeToggle />
           </div>
         </div>
@@ -142,45 +168,17 @@ function Sidebar() {
         </button>
       </div>
 
-      {/* Search (optional, can be enabled later)
-      <div className="px-3 pb-2">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Search chats..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-          />
-        </div>
-      </div>
-      */}
-
       {/* Scrollable Navigation Area */}
       <div className="flex-1 overflow-y-auto py-2">
         {/* Main Navigation */}
         <nav className="px-3 space-y-1">
-          {mainNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.to || pathname.startsWith(item.to + '/');
-            
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={clsx(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
-                  isActive
-                    ? "bg-white/10 text-white"
-                    : "text-gray-400 hover:bg-white/5 hover:text-white"
-                )}
-              >
-                <Icon className="h-5 w-5" />
-                <span>{item.label}</span>
-              </NavLink>
-            );
-          })}
+          {mainNavItems.map((item) => (
+            <NavItem
+              key={item.to}
+              item={item}
+              isActive={pathname === item.to || pathname.startsWith(item.to + '/')}
+            />
+          ))}
         </nav>
 
         {/* Divider */}
@@ -191,7 +189,7 @@ function Sidebar() {
           {tokenNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.to;
-            
+
             return (
               <NavLink
                 key={item.to}
@@ -227,10 +225,17 @@ function Sidebar() {
             <span>Recent Chats</span>
             {showChats ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </button>
-          
+
           {showChats && (
             <div className="mt-1 space-y-1">
-              {recentChats.length > 0 ? (
+              {isLoading ? (
+                // Skeleton loading for chats
+                <div className="space-y-2 px-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="animate-pulse bg-white/5 rounded-lg h-8" />
+                  ))}
+                </div>
+              ) : recentChats.length > 0 ? (
                 recentChats.map((chat) => (
                   <NavLink
                     key={chat.id}
@@ -243,14 +248,14 @@ function Sidebar() {
                     )}
                   >
                     <MessageSquare className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">{chat.title || 'New conversation'}</span>
+                    <span className="truncate">{chat.title || chat.preview || 'New conversation'}</span>
                   </NavLink>
                 ))
               ) : (
                 <div className="px-3 py-4 text-center">
                   <MessageSquare className="h-8 w-8 text-gray-600 mx-auto mb-2" />
                   <p className="text-xs text-gray-500">No recent chats</p>
-                  <button 
+                  <button
                     onClick={handleNewChat}
                     className="text-xs text-purple-400 hover:text-purple-300 mt-1"
                   >
@@ -265,9 +270,9 @@ function Sidebar() {
 
       {/* Bottom Section */}
       <div className="mt-auto border-t border-white/10">
-        {/* Streak Counter */}
+        {/* Streak Counter - Using cached data */}
         <div className="p-3">
-          <StreakCounter variant="compact" />
+          <CompactStreak stats={gamificationStats} />
         </div>
 
         {/* Upgrade Banner (show only for free/basic tiers) */}
@@ -291,7 +296,7 @@ function Sidebar() {
           {secondaryNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.to;
-            
+
             return (
               <NavLink
                 key={item.to}
@@ -310,18 +315,20 @@ function Sidebar() {
           })}
         </nav>
 
-        {/* User Profile with Enhanced Dropdown */}
+        {/* User Profile with Enhanced Dropdown - Pass cached data */}
         <div className="p-3 border-t border-white/10">
-          <ProfileDropdown 
+          <ProfileDropdown
             showSettingsModal={() => setShowSettings(true)}
+            cachedSubscriptionData={subscriptionData}
+            cachedPlatformCount={connectedPlatforms}
           />
         </div>
       </div>
 
       {/* Settings Modal */}
-      <SettingsModal 
-        isOpen={showSettings} 
-        onClose={() => setShowSettings(false)} 
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
       />
     </aside>
   );
