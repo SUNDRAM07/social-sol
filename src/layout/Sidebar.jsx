@@ -137,18 +137,22 @@ function Sidebar() {
   return (
     <aside className="fixed left-0 top-0 h-full w-[280px] bg-slate-900/95 backdrop-blur-xl flex flex-col z-20 border-r border-white/10">
       {/* Header with Logo */}
-      <div className="p-4 border-b border-white/10">
-        <div className="flex items-center justify-between">
+      <div className="p-3 border-b border-white/10">
+        <div className="flex items-center justify-between gap-2">
           <button
             onClick={() => navigate('/dashboard')}
-            className="hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-purple-500/50 rounded-lg"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-purple-500/50 rounded-lg overflow-hidden"
             aria-label="Go to Dashboard"
           >
-            <img
-              src="/Gemini_Generated_Image_en4aq2en4aq2en4a.png"
-              alt="SocialAnywhere"
-              className="h-7 w-auto object-contain"
-            />
+            {/* Logo icon only - cropped to show just the emblem */}
+            <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-purple-500/20 to-pink-500/20 p-0.5">
+              <img
+                src="/Gemini_Generated_Image_en4aq2en4aq2en4a.png"
+                alt="SocialSol"
+                className="w-full h-full object-cover object-top scale-[1.8] translate-y-1"
+              />
+            </div>
+            <span className="text-white font-semibold text-sm">SocialSol</span>
           </button>
           <div className="flex items-center gap-2">
             {isLoading ? (
