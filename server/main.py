@@ -395,6 +395,11 @@ from gamification_routes import router as gamification_router
 main_app.include_router(gamification_router)
 app.include_router(gamification_router)
 
+# Include flow automation routes
+from flow_routes import router as flow_router
+main_app.include_router(flow_router)
+app.include_router(flow_router)
+
 # Import auth dependency after router is included
 from auth_routes import get_current_user_dependency
 from auth_service import auth_service

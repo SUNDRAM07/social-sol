@@ -21,7 +21,8 @@ import {
   ChevronRight,
   MessageSquare,
   Crown,
-  Flame
+  Flame,
+  Zap
 } from "lucide-react";
 
 // Main navigation items
@@ -36,7 +37,7 @@ const mainNavItems = [
 // Token/Automation section
 const tokenNavItems = [
   { to: "/tokens", label: "Token Dashboard", icon: Coins, badge: null },
-  // { to: "/flows", label: "Automations", icon: Zap, badge: "Soon" },
+  { to: "/flows", label: "Automations", icon: Zap, badge: "New" },
 ];
 
 // Secondary nav items (bottom section)

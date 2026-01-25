@@ -17,6 +17,8 @@ import HelpSupport from "./pages/HelpSupport.jsx";
 import Calendar from "./pages/Calendar.jsx";
 import TokenDashboard from "./pages/TokenDashboard.jsx";
 import Onboarding from "./pages/Onboarding.jsx";
+import Flows from "./pages/Flows.jsx";
+import FlowBuilder from "./pages/FlowBuilder.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 
 function App() {
@@ -114,6 +116,27 @@ function App() {
             <ProtectedRoute>
               <AppLayout>
                 <TokenDashboard />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/flows" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Flows />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/flows/new" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <FlowBuilder />
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/flows/:flowId" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <FlowBuilder />
               </AppLayout>
             </ProtectedRoute>
           } />
