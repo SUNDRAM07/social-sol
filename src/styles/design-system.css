@@ -10,36 +10,77 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* ============================================
-   COLOR SYSTEM - AI/Crypto Dark Theme
+   COLOR SYSTEM - Theme-aware colors
    ============================================ */
-:root {
-  /* Base Colors */
+
+/* Light Mode (Default) */
+:root, [data-theme="light"] {
+  /* Base Colors - Light */
+  --color-bg-primary: #fef6fb;
+  --color-bg-secondary: #f8fafc;
+  --color-bg-tertiary: #f1f5f9;
+  --color-bg-elevated: #ffffff;
+  --color-bg-hover: #f1f5f9;
+  
+  /* Aliases (shorthand) - Light */
+  --bg-primary: #fef6fb;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --surface: #ffffff;
+  --bg-muted: #f1f5f9;
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text: #1e293b;
+  --border: rgba(0, 0, 0, 0.1);
+  
+  /* Surface Colors - Light */
+  --color-surface: #ffffff;
+  --color-surface-hover: #f8fafc;
+  --color-surface-active: #f1f5f9;
+  
+  /* Text Colors - Light */
+  --color-text-primary: #1e293b;
+  --color-text-secondary: #475569;
+  --color-text-tertiary: #64748b;
+  --color-text-muted: #94a3b8;
+}
+
+/* Dark Mode */
+[data-theme="dark"] {
+  /* Base Colors - Dark */
   --color-bg-primary: #0a0a0f;
   --color-bg-secondary: #12121a;
   --color-bg-tertiary: #1a1a25;
   --color-bg-elevated: #1f1f2e;
   --color-bg-hover: #252535;
   
-  /* Aliases (shorthand) */
+  /* Aliases (shorthand) - Dark */
   --bg-primary: #0a0a0f;
   --bg-secondary: #12121a;
   --bg-tertiary: #1a1a25;
-  --surface: rgba(26, 26, 37, 0.8);
+  --surface: rgba(26, 26, 37, 0.9);
+  --bg-muted: #1a1a25;
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
-  --text-muted: #475569;
-  --border: rgba(148, 163, 184, 0.1);
+  --text-muted: #64748b;
+  --text: #f8fafc;
+  --border: rgba(148, 163, 184, 0.15);
   
-  /* Surface Colors */
-  --color-surface: rgba(26, 26, 37, 0.8);
+  /* Surface Colors - Dark */
+  --color-surface: rgba(26, 26, 37, 0.9);
   --color-surface-hover: rgba(37, 37, 53, 0.9);
   --color-surface-active: rgba(45, 45, 65, 0.95);
   
-  /* Text Colors */
+  /* Text Colors - Dark */
   --color-text-primary: #f8fafc;
   --color-text-secondary: #94a3b8;
   --color-text-tertiary: #64748b;
   --color-text-muted: #475569;
+}
+
+/* Shared values (both themes) */
+:root {
   
   /* Brand Colors - Solana Inspired */
   --color-brand-primary: #9945FF;

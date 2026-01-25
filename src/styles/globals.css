@@ -65,14 +65,42 @@
   --bg-pattern: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23667eea' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 
+/* Light theme tokens (explicit) */
+[data-theme="light"] {
+  --bg: #fef6fb;
+  --bg-muted: #f8fafc;
+  --surface: #ffffff;
+  --border: rgba(0, 0, 0, 0.08);
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --text-light: #94a3b8;
+  --bg-overlay: linear-gradient(135deg,
+    rgba(237, 0, 140, 0.12),
+    rgba(255, 92, 141, 0.08),
+    rgba(102, 126, 234, 0.06));
+  
+  /* Light mode gradients */
+  --bg-gradient-subtle: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  --bg-gradient-card: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
+  
+  /* Light shadows */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm: 0 4px 12px rgba(0,0,0,0.05);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-lg: 0 16px 48px rgba(0,0,0,0.1);
+  --shadow-colored: 0 4px 20px rgba(147, 51, 234, 0.1);
+  --shadow-colored-lg: 0 12px 40px rgba(147, 51, 234, 0.15);
+}
+
 /* Dark theme tokens */
 [data-theme="dark"] {
   --bg: #0b1020;
   --bg-muted: #0f172a;
-  --surface: #0f172a;
-  --border: #1f2937;
-  --text: #e5e7eb;
+  --surface: #1e1e2e;
+  --border: rgba(255, 255, 255, 0.1);
+  --text: #f1f5f9;
   --text-muted: #94a3b8;
+  --text-light: #64748b;
   --bg-overlay: linear-gradient(135deg,
     rgba(203, 50, 135, 0.28),
     rgba(117, 49, 200, 0.24),
@@ -82,6 +110,14 @@
   --bg-gradient-subtle: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
   --bg-gradient-card: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.7) 100%);
   --bg-pattern: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23667eea' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  
+  /* Dark shadows */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.6);
+  --shadow-colored: 0 4px 20px rgba(153, 69, 255, 0.3);
+  --shadow-colored-lg: 0 12px 40px rgba(153, 69, 255, 0.4);
 }
 
 /* Utility base styles */

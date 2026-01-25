@@ -57,28 +57,42 @@ body,
   --card-padding: 1.25rem;
 }
 
-/* Dark mode overrides */
-.dark {
-  --glass-bg: var(--glass-bg-dark);
-  --glass-border: var(--glass-border-dark);
-  --glass-shadow: var(--glass-shadow-dark);
-  --bg-primary: var(--bg-dark-primary);
-  --bg-secondary: var(--bg-dark-secondary);
-  --bg-tertiary: var(--bg-dark-tertiary);
-  --text-primary: var(--text-dark-primary);
-  --text-secondary: var(--text-dark-secondary);
-}
-
-/* Light mode (default) */
-.light {
+/* Light mode (default) - MUST come first */
+.light, [data-theme="light"] {
   --glass-bg: var(--glass-bg-light);
   --glass-border: var(--glass-border-light);
   --glass-shadow: var(--glass-shadow-light);
-  --bg-primary: var(--bg-light-primary);
-  --bg-secondary: var(--bg-light-secondary);
-  --bg-tertiary: var(--bg-light-tertiary);
-  --text-primary: var(--text-light-primary);
-  --text-secondary: var(--text-light-secondary);
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  /* Critical light mode overrides */
+  --surface: #ffffff;
+  --bg: #fef6fb;
+  --bg-muted: #f8fafc;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --border: rgba(0, 0, 0, 0.08);
+}
+
+/* Dark mode overrides */
+.dark, [data-theme="dark"] {
+  --glass-bg: var(--glass-bg-dark);
+  --glass-border: var(--glass-border-dark);
+  --glass-shadow: var(--glass-shadow-dark);
+  --bg-primary: #0f0f23;
+  --bg-secondary: #1a1a2e;
+  --bg-tertiary: #16213e;
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  /* Critical dark mode overrides */
+  --surface: #1e1e2e;
+  --bg: #0b1020;
+  --bg-muted: #1a1a25;
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --border: rgba(255, 255, 255, 0.1);
 }
 
 /* Utility layers */
