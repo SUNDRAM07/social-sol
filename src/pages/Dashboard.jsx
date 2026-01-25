@@ -329,29 +329,29 @@ function Dashboard() {
       )}
 
       {/* Hero Section */}
-      <div className="relative bg-gradient-to-br from-purple-50 via-indigo-50 to-pink-50 p-6 mb-8 mx-6 rounded-2xl border border-purple-100/50 shadow-lg overflow-hidden">
+      <div className="relative bg-gradient-to-br from-purple-500/10 via-indigo-500/10 to-pink-500/10 dark:from-purple-900/20 dark:via-indigo-900/20 dark:to-pink-900/20 p-6 mb-8 mx-6 rounded-2xl border border-purple-500/20 dark:border-purple-500/30 shadow-lg overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-purple-400/5 via-transparent to-pink-400/5"></div>
         <div className="relative z-10 flex flex-col lg:flex-row items-start gap-12 max-w-7xl mx-auto">
           <div className="flex-1 pt-6">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-purple-600 text-sm font-semibold">✨ AI-Powered Social Media Manager</span>
+              <span className="text-purple-500 dark:text-purple-400 text-sm font-semibold">✨ AI-Powered Social Media Manager</span>
             </div>
-            <h1 className="text-3xl font-bold text-purple-700 mb-3">Automate Your Social Media Success</h1>
-            <p className="text-gray-700 mb-4 font-medium text-lg">Your manager that never sleeps</p>
-            <p className="text-gray-600 mb-8">Build, grow, and scale your business with a team of AI helpers — schedule posts, reply to comments, and automate work while you sleep.</p>
+            <h1 className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-3">Automate Your Social Media Success</h1>
+            <p className="text-[var(--text)] mb-4 font-medium text-lg">Your manager that never sleeps</p>
+            <p className="text-[var(--text-muted)] mb-8">Build, grow, and scale your business with a team of AI helpers — schedule posts, reply to comments, and automate work while you sleep.</p>
 
             <ul className="space-y-3 mb-8">
               <li className="flex items-center gap-2">
-                <span className="text-purple-600">●</span>
-                <span className="text-gray-700">Schedule unlimited posts across all platforms</span>
+                <span className="text-purple-500">●</span>
+                <span className="text-[var(--text)]">Schedule unlimited posts across all platforms</span>
               </li>
               <li className="flex items-center gap-2">
-                <span className="text-purple-600">●</span>
-                <span className="text-gray-700">AI-powered content generation in 28+ languages</span>
+                <span className="text-purple-500">●</span>
+                <span className="text-[var(--text)]">AI-powered content generation in 28+ languages</span>
               </li>
               <li className="flex items-center gap-2">
-                <span className="text-purple-600">●</span>
-                <span className="text-gray-700">Real-time analytics and performance tracking</span>
+                <span className="text-purple-500">●</span>
+                <span className="text-[var(--text)]">Real-time analytics and performance tracking</span>
               </li>
             </ul>
 
@@ -363,12 +363,12 @@ function Dashboard() {
               >
                 Get Started Free
               </Button>
-              <Button variant="outline" className="border border-gray-300 hover:bg-gray-50 px-6 py-2.5 rounded-md font-medium">Watch Demo</Button>
+              <Button variant="outline" className="border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--bg-muted)] px-6 py-2.5 rounded-md font-medium">Watch Demo</Button>
             </div>
           </div>
 
           <div className="flex-1">
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-purple-100 w-full bg-purple-50 h-[320px] md:h-[360px] lg:h-[400px]">
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-purple-500/20 w-full bg-purple-500/10 h-[320px] md:h-[360px] lg:h-[400px]">
               <img
                 src="https://images.unsplash.com/photo-1582005450386-52b25f82d9bb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzb2NpYWwlMjBtZWRpYSUyMG1hcmtldGluZyUyMHRlYW18ZW58MXx8fHwxNzYxNjY3NjI2fDA&ixlib=rb-4.1.0&q=80&w=1080"
                 alt="Social Media Management Platform"
@@ -379,13 +379,13 @@ function Dashboard() {
 
               {/* Platform badges */}
               <div className="absolute top-6 left-6 flex gap-3">
-                <div className="flex items-center gap-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl px-4 py-2 border border-purple-100">
+                <div className="flex items-center gap-2 bg-[var(--surface)]/95 backdrop-blur-sm rounded-xl shadow-xl px-4 py-2 border border-purple-500/20">
                   <img src="/socialanywhere/icons/facebook.png" alt="Facebook" className="w-5 h-5" loading="lazy" />
-                  <span className="text-xs text-gray-700">Facebook</span>
+                  <span className="text-xs text-[var(--text)]">Facebook</span>
                 </div>
-                <div className="flex items-center gap-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl px-4 py-2 border border-purple-100">
+                <div className="flex items-center gap-2 bg-[var(--surface)]/95 backdrop-blur-sm rounded-xl shadow-xl px-4 py-2 border border-purple-500/20">
                   <img src="/socialanywhere/icons/instagram.png" alt="Instagram" className="w-5 h-5" loading="lazy" />
-                  <span className="text-xs text-gray-700">Instagram</span>
+                  <span className="text-xs text-[var(--text)]">Instagram</span>
                 </div>
               </div>
             </div>
@@ -396,8 +396,8 @@ function Dashboard() {
       {/* Welcome back section */}
       <div className="px-6 mb-6 flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">Welcome back, {user?.name || 'User'}</h2>
-          <p className="text-gray-600 mt-1">Here is what is happening with your campaigns today.</p>
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-indigo-500 bg-clip-text text-transparent">Welcome back, {user?.name || 'User'}</h2>
+          <p className="text-[var(--text-muted)] mt-1">Here is what is happening with your campaigns today.</p>
         </div>
         <Link to="/create">
           <Button variant="primary" className="bg-purple-600 text-white px-4 py-2 rounded-md">
@@ -407,22 +407,22 @@ function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-colored mx-6 p-6 mb-8 border border-purple-100/50 card-modern">
+      <div className="bg-[var(--surface)]/80 backdrop-blur-sm rounded-xl shadow-colored mx-6 p-6 mb-8 border border-purple-500/20 card-modern">
         <div className="grid grid-cols-3 gap-6">
           <div className="relative">
-            <div className="absolute -top-2 -right-2 w-16 h-16 bg-purple-200/30 rounded-full blur-xl"></div>
-            <div className="text-gray-600 mb-1 text-sm font-medium">Total campaigns</div>
-            <div className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">{stats.total}</div>
+            <div className="absolute -top-2 -right-2 w-16 h-16 bg-purple-500/20 rounded-full blur-xl"></div>
+            <div className="text-[var(--text-muted)] mb-1 text-sm font-medium">Total campaigns</div>
+            <div className="text-4xl font-bold bg-gradient-to-r from-purple-500 to-indigo-500 bg-clip-text text-transparent">{stats.total}</div>
           </div>
           <div className="relative">
-            <div className="absolute -top-2 -right-2 w-16 h-16 bg-blue-200/30 rounded-full blur-xl"></div>
-            <div className="text-gray-600 mb-1 text-sm font-medium">Posts this week</div>
-            <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">{stats.scheduledThisWeek}</div>
+            <div className="absolute -top-2 -right-2 w-16 h-16 bg-blue-500/20 rounded-full blur-xl"></div>
+            <div className="text-[var(--text-muted)] mb-1 text-sm font-medium">Posts this week</div>
+            <div className="text-4xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">{stats.scheduledThisWeek}</div>
           </div>
           <div className="relative">
-            <div className="absolute -top-2 -right-2 w-16 h-16 bg-green-200/30 rounded-full blur-xl"></div>
-            <div className="text-gray-600 mb-1 text-sm font-medium">Active</div>
-            <div className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">{stats.active}</div>
+            <div className="absolute -top-2 -right-2 w-16 h-16 bg-green-500/20 rounded-full blur-xl"></div>
+            <div className="text-[var(--text-muted)] mb-1 text-sm font-medium">Active</div>
+            <div className="text-4xl font-bold bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">{stats.active}</div>
           </div>
         </div>
       </div>
@@ -430,60 +430,60 @@ function Dashboard() {
       {/* Main content grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mx-6 mb-8">
         {/* Recent Activity */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-colored overflow-hidden border border-purple-100/50 card-modern">
-          <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-transparent">
-            <h2 className="font-semibold text-lg bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">Recent Activity</h2>
+        <div className="bg-[var(--surface)]/80 backdrop-blur-sm rounded-xl shadow-colored overflow-hidden border border-purple-500/20 card-modern">
+          <div className="p-4 border-b border-[var(--border)] bg-gradient-to-r from-purple-500/10 to-transparent">
+            <h2 className="font-semibold text-lg bg-gradient-to-r from-purple-500 to-indigo-500 bg-clip-text text-transparent">Recent Activity</h2>
           </div>
           <div>
             <div
-              className="flex items-start gap-3 p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50"
+              className="flex items-start gap-3 p-4 border-b border-[var(--border)] cursor-pointer hover:bg-[var(--bg-muted)] transition-colors"
               onClick={openInstagramPopup}
             >
-              <div className="bg-purple-100 p-2 rounded-md">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-600" viewBox="0 0 20 20" fill="currentColor">
+              <div className="bg-purple-500/20 p-2 rounded-md">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-500" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
                 </svg>
               </div>
               <div className="flex-1">
-                <div className="font-medium text-sm">Posted to Instagram</div>
-                <div className="text-xs text-gray-500">Summer Product Launch campaign</div>
+                <div className="font-medium text-sm text-[var(--text)]">Posted to Instagram</div>
+                <div className="text-xs text-[var(--text-muted)]">Summer Product Launch campaign</div>
               </div>
-              <div className="text-xs text-gray-400">2 hours ago</div>
+              <div className="text-xs text-[var(--text-muted)]">2 hours ago</div>
             </div>
 
-            <div className="flex items-start gap-3 p-4 border-b border-gray-100">
-              <div className="bg-blue-100 p-2 rounded-md">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+            <div className="flex items-start gap-3 p-4 border-b border-[var(--border)]">
+              <div className="bg-blue-500/20 p-2 rounded-md">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M3 3a1 1 0 000 2h10a1 1 0 100-2H3zm0 4a1 1 0 000 2h6a1 1 0 100-2H3zm0 4a1 1 0 100 2h8a1 1 0 100-2H3z" clipRule="evenodd" />
                 </svg>
               </div>
               <div className="flex-1">
-                <div className="font-medium text-sm">Analytics updated</div>
-                <div className="text-xs text-gray-500">Engagement increased by 24%</div>
+                <div className="font-medium text-sm text-[var(--text)]">Analytics updated</div>
+                <div className="text-xs text-[var(--text-muted)]">Engagement increased by 24%</div>
               </div>
-              <div className="text-xs text-gray-400">5 hours ago</div>
+              <div className="text-xs text-[var(--text-muted)]">5 hours ago</div>
             </div>
 
             <div className="flex items-start gap-3 p-4">
-              <div className="bg-yellow-100 p-2 rounded-md">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-600" viewBox="0 0 20 20" fill="currentColor">
+              <div className="bg-yellow-500/20 p-2 rounded-md">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
                 </svg>
               </div>
               <div className="flex-1">
-                <div className="font-medium text-sm">AI generated 6 new ideas</div>
-                <div className="text-xs text-gray-500">For your Holiday Sale campaign</div>
+                <div className="font-medium text-sm text-[var(--text)]">AI generated 6 new ideas</div>
+                <div className="text-xs text-[var(--text-muted)]">For your Holiday Sale campaign</div>
               </div>
-              <div className="text-xs text-gray-400">Yesterday</div>
+              <div className="text-xs text-[var(--text-muted)]">Yesterday</div>
             </div>
           </div>
         </div>
 
         {/* Weekly Trending Topics */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-colored overflow-hidden border border-purple-100/50 card-modern">
-          <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-transparent flex justify-between items-center">
-            <h2 className="font-semibold text-lg bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Weekly Trending Topics</h2>
-            <button className="text-gray-400 hover:text-gray-600">
+        <div className="bg-[var(--surface)]/80 backdrop-blur-sm rounded-xl shadow-colored overflow-hidden border border-purple-500/20 card-modern">
+          <div className="p-4 border-b border-[var(--border)] bg-gradient-to-r from-indigo-500/10 to-transparent flex justify-between items-center">
+            <h2 className="font-semibold text-lg bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">Weekly Trending Topics</h2>
+            <button className="text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
               </svg>
@@ -528,10 +528,10 @@ function Dashboard() {
         <div>
           {/* AI Copywriter */}
           <Link to="/create" className="block">
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-colored p-4 mb-6 flex justify-between items-center hover:shadow-colored-lg transition-all duration-200 border border-purple-100/50 card-modern group">
+            <div className="bg-[var(--surface)]/80 backdrop-blur-sm rounded-xl shadow-colored p-4 mb-6 flex justify-between items-center hover:shadow-colored-lg transition-all duration-200 border border-purple-500/20 card-modern group">
               <div>
-                <h2 className="font-semibold mb-1 bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent group-hover:from-purple-700 group-hover:to-indigo-700 transition-all">AI Copywriter</h2>
-                <p className="text-sm text-gray-600">Captions, ads & blogs in 28+ languages.</p>
+                <h2 className="font-semibold mb-1 bg-gradient-to-r from-purple-500 to-indigo-500 bg-clip-text text-transparent group-hover:from-purple-400 group-hover:to-indigo-400 transition-all">AI Copywriter</h2>
+                <p className="text-sm text-[var(--text-muted)]">Captions, ads & blogs in 28+ languages.</p>
               </div>
               <div className="bg-gradient-to-br from-purple-600 to-indigo-600 p-2 rounded-lg shadow-colored group-hover:scale-110 transition-transform">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -543,10 +543,10 @@ function Dashboard() {
 
           {/* Idea Generator */}
           <Link to="/idea-generator" className="block">
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-colored p-4 mb-6 flex justify-between items-center hover:shadow-colored-lg transition-all duration-200 border border-blue-100/50 card-modern group">
+            <div className="bg-[var(--surface)]/80 backdrop-blur-sm rounded-xl shadow-colored p-4 mb-6 flex justify-between items-center hover:shadow-colored-lg transition-all duration-200 border border-blue-500/20 card-modern group">
               <div>
-                <h2 className="font-semibold mb-1 bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent group-hover:from-blue-700 group-hover:to-cyan-700 transition-all">Idea Generator</h2>
-                <p className="text-sm text-gray-600">Generate creative content ideas with AI assistance.</p>
+                <h2 className="font-semibold mb-1 bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent group-hover:from-blue-400 group-hover:to-cyan-400 transition-all">Idea Generator</h2>
+                <p className="text-sm text-[var(--text-muted)]">Generate creative content ideas with AI assistance.</p>
               </div>
               <div className="bg-gradient-to-br from-blue-600 to-cyan-600 p-2 rounded-lg shadow-colored group-hover:scale-110 transition-transform">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -560,34 +560,34 @@ function Dashboard() {
         {/* Right column */}
         <div>
           {/* Quick Actions */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-colored p-4 border border-indigo-100/50 card-modern">
-            <h2 className="font-semibold mb-4 text-lg bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Quick Actions</h2>
+          <div className="bg-[var(--surface)]/80 backdrop-blur-sm rounded-xl shadow-colored p-4 border border-indigo-500/20 card-modern">
+            <h2 className="font-semibold mb-4 text-lg bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">Quick Actions</h2>
             <div className="space-y-3">
-              <Link to="/analytics" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                <div className="bg-blue-100 p-2 rounded-md">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+              <Link to="/analytics" className="flex items-center gap-3 p-3 hover:bg-[var(--bg-muted)] rounded-lg transition-colors">
+                <div className="bg-blue-500/20 p-2 rounded-md">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
                   </svg>
                 </div>
-                <span className="text-gray-700">View Analytics</span>
+                <span className="text-[var(--text)]">View Analytics</span>
               </Link>
 
-              <Link to="/campaigns" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                <div className="bg-yellow-100 p-2 rounded-md">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-600" viewBox="0 0 20 20" fill="currentColor">
+              <Link to="/campaigns" className="flex items-center gap-3 p-3 hover:bg-[var(--bg-muted)] rounded-lg transition-colors">
+                <div className="bg-yellow-500/20 p-2 rounded-md">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
                   </svg>
                 </div>
-                <span className="text-gray-700">Manage Campaigns</span>
+                <span className="text-[var(--text)]">Manage Campaigns</span>
               </Link>
 
-              <Link to="/settings" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                <div className="bg-gray-100 p-2 rounded-md">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+              <Link to="/settings" className="flex items-center gap-3 p-3 hover:bg-[var(--bg-muted)] rounded-lg transition-colors">
+                <div className="bg-[var(--bg-muted)] p-2 rounded-md">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[var(--text-muted)]" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
                   </svg>
                 </div>
-                <span className="text-gray-700">Connect Platforms</span>
+                <span className="text-[var(--text)]">Connect Platforms</span>
               </Link>
             </div>
           </div>

@@ -142,10 +142,10 @@ function Calendar() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-semibold">Calendar</h1>
+        <h1 className="text-2xl font-semibold text-[var(--text)]">Calendar</h1>
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-          <span className="ml-4 text-gray-600">Loading calendar...</span>
+          <span className="ml-4 text-[var(--text-muted)]">Loading calendar...</span>
         </div>
       </div>
     );
@@ -155,27 +155,27 @@ function Calendar() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Calendar</h1>
+          <h1 className="text-2xl font-semibold text-[var(--text)]">Calendar</h1>
           {campaignName && (
-            <p className="text-sm text-gray-500">Showing posts for: {campaignName}</p>
+            <p className="text-sm text-[var(--text-muted)]">Showing posts for: {campaignName}</p>
           )}
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigateMonth(-1)}
-            className="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50"
+            className="px-3 py-2 border border-[var(--border)] rounded bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--bg-muted)] transition-colors"
           >
             ← Prev
           </button>
           <button
             onClick={navigateToday}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
           >
             Today
           </button>
           <button
             onClick={() => navigateMonth(1)}
-            className="px-3 py-2 border border-gray-300 rounded hover:bg-gray-50"
+            className="px-3 py-2 border border-[var(--border)] rounded bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--bg-muted)] transition-colors"
           >
             Next →
           </button>
@@ -184,7 +184,7 @@ function Calendar() {
 
       <Card>
         <div className="p-6">
-          <div className="mb-4 text-xl font-semibold text-center">
+          <div className="mb-4 text-xl font-semibold text-center text-[var(--text)]">
             {format(selectedDate, "MMMM yyyy")}
           </div>
           
@@ -192,7 +192,7 @@ function Calendar() {
           <div className="grid grid-cols-7 gap-1">
             {/* Day headers */}
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
-              <div key={day} className="p-2 text-center text-sm font-semibold text-gray-600">
+              <div key={day} className="p-2 text-center text-sm font-semibold text-[var(--text-muted)]">
                 {day}
               </div>
             ))}
@@ -207,22 +207,22 @@ function Calendar() {
               return (
                 <div
                   key={idx}
-                  className={`min-h-[100px] border border-gray-200 p-2 ${
-                    !isCurrentMonth ? "bg-gray-50 text-gray-400" : "bg-white"
+                  className={`min-h-[100px] border border-[var(--border)] p-2 ${
+                    !isCurrentMonth ? "bg-[var(--bg-muted)] text-[var(--text-muted)] opacity-60" : "bg-[var(--surface)]"
                   } ${isToday ? "ring-2 ring-blue-500" : ""}`}
                 >
-                  <div className={`text-sm font-medium mb-1 ${isToday ? "text-blue-600" : ""}`}>
+                  <div className={`text-sm font-medium mb-1 ${isToday ? "text-blue-500" : "text-[var(--text)]"}`}>
                     {format(date, "d")}
                   </div>
                   <div className="space-y-1">
                     {dayPosts.slice(0, 3).map(post => (
                       <div
                         key={post.id}
-                        className="text-xs p-1 bg-blue-50 text-blue-700 rounded truncate cursor-pointer hover:bg-blue-100"
+                        className="text-xs p-1 bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded truncate cursor-pointer hover:bg-blue-500/20 dark:hover:bg-blue-500/30 transition-colors"
                         title={`${post.title} - ${format(post.start, "h:mm a")}`}
                       >
                         <div className="font-medium truncate">{post.title}</div>
-                        <div className="text-blue-600">{format(post.start, "h:mm a")}</div>
+                        <div className="text-blue-500">{format(post.start, "h:mm a")}</div>
                         <div className="flex items-center gap-1 mt-1">
                           {post.platforms?.slice(0, 3).map(platform => (
                             <img
@@ -236,7 +236,7 @@ function Calendar() {
                       </div>
                     ))}
                     {dayPosts.length > 3 && (
-                      <div className="text-xs text-gray-500 text-center">
+                      <div className="text-xs text-[var(--text-muted)] text-center">
                         +{dayPosts.length - 3} more
                       </div>
                     )}
@@ -252,7 +252,7 @@ function Calendar() {
       <Card title={`All Posts (${scheduledPosts.length})`}>
         <div className="space-y-4">
           {scheduledPosts.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-[var(--text-muted)]">
               No posts found
               {campaignFilter && ` for campaign "${campaignName}"`}
             </div>
@@ -269,38 +269,38 @@ function Calendar() {
                 return (
                   <div
                     key={post.id}
-                    className={`border rounded-lg p-4 hover:bg-gray-50 ${
-                      isPosted ? 'border-green-200 bg-green-50' : 
-                      isScheduled ? 'border-blue-200 bg-blue-50' : 
-                      'border-gray-200'
+                    className={`border rounded-lg p-4 hover:bg-[var(--bg-muted)] transition-colors ${
+                      isPosted ? 'border-green-500/30 bg-green-500/10' : 
+                      isScheduled ? 'border-blue-500/30 bg-blue-500/10' : 
+                      'border-[var(--border)] bg-[var(--surface)]'
                     }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-gray-900">{post.title}</h3>
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <h3 className="font-semibold text-[var(--text)]">{post.title}</h3>
                           <span className={`px-2 py-1 rounded text-xs ${
-                            isPosted ? 'bg-green-100 text-green-700' :
-                            isScheduled ? 'bg-blue-100 text-blue-700' :
-                            'bg-gray-100 text-gray-700'
+                            isPosted ? 'bg-green-500/20 text-green-600 dark:text-green-400' :
+                            isScheduled ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400' :
+                            'bg-[var(--bg-muted)] text-[var(--text-muted)]'
                           }`}>
                             {format(post.start, "MMM d, yyyy h:mm a")}
                           </span>
                           {isNew && (
-                            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">
+                            <span className="px-2 py-1 bg-purple-500/20 text-purple-600 dark:text-purple-400 rounded text-xs">
                               New
                             </span>
                           )}
                           <span className={`px-2 py-1 rounded text-xs ${
-                            isPosted ? 'bg-green-50 text-green-600' :
-                            isScheduled ? 'bg-blue-50 text-blue-600' :
-                            'bg-gray-50 text-gray-600'
+                            isPosted ? 'bg-green-500/10 text-green-600 dark:text-green-400' :
+                            isScheduled ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' :
+                            'bg-[var(--bg-muted)] text-[var(--text-muted)]'
                           }`}>
                             {post.status}
                           </span>
                         </div>
                         {post.description && (
-                          <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                          <p className="text-sm text-[var(--text-muted)] line-clamp-2 mb-2">
                             {post.description}
                           </p>
                         )}

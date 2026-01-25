@@ -350,14 +350,14 @@ export default function IdeaGenerator() {
                   
                   {/* Min thumb */}
                   <div 
-                    className="absolute w-5 h-5 bg-white border-2 border-blue-500 rounded-full cursor-pointer shadow-md hover:shadow-lg transition-shadow"
+                    className="absolute w-5 h-5 bg-[var(--surface)] border-2 border-blue-500 rounded-full cursor-pointer shadow-md hover:shadow-lg transition-shadow"
                     style={{ left: `${minPercentage}%`, transform: 'translateX(-50%) translateY(-6px)', top: '0px' }}
                     onMouseDown={(e) => handleSliderMouseDown(e, 'min')}
                   ></div>
                   
                   {/* Max thumb */}
                   <div 
-                    className="absolute w-5 h-5 bg-white border-2 border-blue-500 rounded-full cursor-pointer shadow-md hover:shadow-lg transition-shadow"
+                    className="absolute w-5 h-5 bg-[var(--surface)] border-2 border-blue-500 rounded-full cursor-pointer shadow-md hover:shadow-lg transition-shadow"
                     style={{ left: `${maxPercentage}%`, transform: 'translateX(-50%) translateY(-6px)', top: '0px' }}
                     onMouseDown={(e) => handleSliderMouseDown(e, 'max')}
                   ></div>
